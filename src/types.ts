@@ -66,7 +66,7 @@ export const BASIC_COLORS = [
   { name: 'Đen', hex: '#000000' },
 ];
 
-export const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyy1NEx0A68DSqfdJl11aLJ99CgymKyNBXjQ2P9sEFgYs75qEPvs2Vz9xlBxIDsyWKOwg/exec';
+export const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbwlmtVsaOE8pHxtS2AyV62AK9GTBowBdwP7TBDXFevpVPkrXl774Ib_ckjNwL4eA0MjRw/exec';
 export const DEFAULT_GOOGLE_CLIENT_ID = '578947535957-4m0bb7ivjoqag82ehh70scehvodsue79.apps.googleusercontent.com';
 
 export const ALLOWED_EMAILS: string[] = [

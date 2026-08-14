@@ -40,7 +40,11 @@ export function useManagerData() {
   });
 
   const [gasUrl, setGasUrl] = useState(() => {
-    return localStorage.getItem('3dManager_gas_url') || DEFAULT_GAS_URL;
+    const saved = localStorage.getItem('3dManager_gas_url');
+    if (!saved || saved.includes('AKfycbyy1NEx0A68DSqfdJl11aLJ99CgymKyNBXjQ2P9sEFgYs75qEPvs2Vz9xlBxIDsyWKOwg')) {
+      return DEFAULT_GAS_URL;
+    }
+    return saved;
   });
   const [tempGasUrl, setTempGasUrl] = useState(gasUrl);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
@@ -132,9 +136,16 @@ export function useManagerData() {
         }
 
         const normalizedAllowed = validEmails.map(e => (e || '').toLowerCase().trim()).filter(Boolean);
-        
-        if (normalizedAllowed.length > 0 && !normalizedAllowed.includes(userEmail)) {
-          setAuthError(`Email "${decoded.email}" không được cấp quyền truy cập.`);
+        const fallbackAllowed = ALLOWED_EMAILS.map(e => (e || '').toLowerCase().trim()).filter(Boolean);
+        const finalAllowedList = normalizedAllowed.length > 0 ? normalizedAllowed : fallbackAllowed;
+
+        if (finalAllowedList.length > 0) {
+          if (!finalAllowedList.includes(userEmail)) {
+            setAuthError(`Email "${decoded.email}" không được cấp quyền truy cập hệ thống.`);
+            return;
+          }
+        } else {
+          setAuthError(`Chưa có email nào được cấp quyền trong Google Sheet (Tab "Users") hoặc bạn chưa Deploy phiên bản mới trên Apps Script.`);
           return;
         }
 
@@ -182,6 +193,16 @@ export function useManagerData() {
         if (Array.isArray(res.data.allowedEmails)) {
           setAllowedEmails(res.data.allowedEmails);
           localStorage.setItem('3dManager_allowed_emails', JSON.stringify(res.data.allowedEmails));
+
+          const normEmails = res.data.allowedEmails.map((e: string) => (e || '').toLowerCase().trim()).filter(Boolean);
+          if (normEmails.length > 0 && user && user.email) {
+            const currentEmail = user.email.toLowerCase().trim();
+            if (!normEmails.includes(currentEmail)) {
+              setUser(null);
+              localStorage.removeItem('3dManager_user');
+              setAuthError(`Tài khoản "${user.email}" không còn trong danh sách được cấp quyền.`);
+            }
+          }
         }
         setSyncStatus('synced');
         setSyncMessage('Đã đồng bộ với Google Sheets');

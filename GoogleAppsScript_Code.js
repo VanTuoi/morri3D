@@ -1,33 +1,5 @@
-/**
- * ==============================================================================
- * GOOGLE APPS SCRIPT CHO HỆ THỐNG QUẢN LÝ MORRI 3D PRINTING
- * ==============================================================================
- * 
- * HƯỚNG DẪN CÀI ĐẶT:
- * 1. Mở file Google Sheet của bạn.
- * 2. Tạo 3 Sheet (Tab):
- *    - Tab 1: "Orders" (Đơn hàng)
- *    - Tab 2: "Filaments" (Kho nhựa in)
- *    - Tab 3: "Users" (Danh sách email được phép truy cập)
- * 
- * 3. Ở Tab "Users":
- *    - Dòng 1 (Tiêu đề): Cột A ghi "Email", Cột B ghi "Tên" (tùy chọn)
- *    - Từ dòng 2 trở đi: Điền các email Google được phép truy cập. Ví dụ:
- *      A2: admin@gmail.com
- *      A3: nhanvien1@gmail.com
- * 
- * 4. Vào menu: Tiện ích mở rộng (Extensions) -> Apps Script.
- * 5. Dán toàn bộ mã nguồn bên dưới vào file Code.gs.
- * 6. Bấm "Triển khai" (Deploy) -> "Tùy chọn triển khai mới" (New deployment)
- *    - Loại: Ứng dụng web (Web App)
- *    - Thực thi dưới dạng: Tôi (Me)
- *    - Ai có quyền truy cập: Bất kỳ ai (Anyone)
- * 7. Copy URL web app dán vào phần Cài đặt trong ứng dụng.
- * ==============================================================================
- */
-
 function doGet(e) {
-  var action = (e && e.parameter && e.parameter.action) || 'getAll';
+  var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : 'getAll';
   var ss = SpreadsheetApp.getActiveSpreadsheet();
 
   try {
@@ -36,31 +8,40 @@ function doGet(e) {
       var filaments = getSheetData(ss, 'Filaments');
       var allowedEmails = getAllowedUsers(ss);
 
-      return createJsonResponse({
-        success: true,
-        data: {
-          orders: orders,
-          filaments: filaments,
-          allowedEmails: allowedEmails
-        }
-      });
+      return ContentService
+        .createTextOutput(JSON.stringify({
+          success: true,
+          data: {
+            orders: orders,
+            filaments: filaments,
+            allowedEmails: allowedEmails
+          }
+        }))
+        .setMimeType(ContentService.MimeType.JSON);
     }
 
     if (action === 'checkEmail') {
-      var emailToCheck = ((e.parameter.email || '')).toLowerCase().trim();
+      var emailToCheck = (e.parameter.email || '').toLowerCase().trim();
       var allowedEmails = getAllowedUsers(ss);
-      var isAllowed = allowedEmails.length === 0 || allowedEmails.indexOf(emailToCheck) !== -1;
+      var isAllowed = allowedEmails.length > 0 && allowedEmails.indexOf(emailToCheck) !== -1;
 
-      return createJsonResponse({
-        success: true,
-        allowed: isAllowed,
-        email: emailToCheck
-      });
+      return ContentService
+        .createTextOutput(JSON.stringify({
+          success: true,
+          allowed: isAllowed,
+          email: emailToCheck
+        }))
+        .setMimeType(ContentService.MimeType.JSON);
     }
 
-    return createJsonResponse({ success: false, error: 'Hành động không hợp lệ' });
+    return ContentService
+      .createTextOutput(JSON.stringify({ success: false, error: 'Hành động không hợp lệ' }))
+      .setMimeType(ContentService.MimeType.JSON);
+
   } catch (err) {
-    return createJsonResponse({ success: false, error: err.toString() });
+    return ContentService
+      .createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 }
 
@@ -77,16 +58,22 @@ function doPost(e) {
       if (contents.data.filaments) {
         saveSheetData(ss, 'Filaments', contents.data.filaments);
       }
-      return createJsonResponse({ success: true, message: 'Đã lưu thành công' });
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: true, message: 'Đã lưu thành công' }))
+        .setMimeType(ContentService.MimeType.JSON);
     }
 
-    return createJsonResponse({ success: false, error: 'Hành động POST không hợp lệ' });
+    return ContentService
+      .createTextOutput(JSON.stringify({ success: false, error: 'Hành động POST không hợp lệ' }))
+      .setMimeType(ContentService.MimeType.JSON);
+
   } catch (err) {
-    return createJsonResponse({ success: false, error: err.toString() });
+    return ContentService
+      .createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 }
 
-/** Lấy danh sách email được cấp phép từ Sheet "Users" */
 function getAllowedUsers(ss) {
   var sheet = ss.getSheetByName('Users');
   if (!sheet) {
@@ -108,7 +95,6 @@ function getAllowedUsers(ss) {
   return emails;
 }
 
-/** Lấy dữ liệu từ Sheet dạng mảng Object */
 function getSheetData(ss, sheetName) {
   var sheet = ss.getSheetByName(sheetName);
   if (!sheet) return [];
@@ -141,7 +127,6 @@ function getSheetData(ss, sheetName) {
   return result;
 }
 
-/** Lưu mảng dữ liệu vào Sheet */
 function saveSheetData(ss, sheetName, items) {
   var sheet = ss.getSheetByName(sheetName);
   if (!sheet) {
@@ -170,9 +155,4 @@ function saveSheetData(ss, sheetName, items) {
   }
 
   sheet.getRange(1, 1, rows.length, headers.length).setValues(rows);
-}
-
-function createJsonResponse(data) {
-  return ContentService.createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
 }
