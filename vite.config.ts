@@ -18,28 +18,7 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
       VitePWA({
-        injectRegister: 'auto',
-        registerType: 'autoUpdate',
-        filename: 'sw.js',
-        workbox: {
-          globPatterns: ['**/*.{js,css,ico,png,svg,woff2,webm}'],
-          cleanupOutdatedCaches: true,
-          clientsClaim: true,
-          skipWaiting: true,
-          runtimeCaching: [
-            {
-              urlPattern: ({ request }) => request.mode === 'navigate',
-              handler: 'NetworkFirst',
-              options: {
-                cacheName: 'navigation-cache',
-                networkTimeoutSeconds: 10
-              }
-            }
-          ]
-        },
-        devOptions: {
-          enabled: false
-        },
+        selfDestroying: true,
         includeAssets: ['logo.png', 'favicon.svg', 'icons.svg'],
         manifest: {
           name: 'Morri 3D Printing Manager',
@@ -49,7 +28,7 @@ export default defineConfig(({ mode }) => {
           background_color: '#09090b',
           display: 'standalone',
           orientation: 'portrait',
-          start_url: `/?v=${pkg.version}`,
+          start_url: '/',
           icons: [
             {
               src: '/logo.png',
