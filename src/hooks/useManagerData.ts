@@ -41,7 +41,7 @@ export function useManagerData() {
 
   const [gasUrl, setGasUrl] = useState(() => {
     const saved = localStorage.getItem('3dManager_gas_url');
-    if (!saved || saved.includes('AKfycbyy1NEx0A68DSqfdJl11aLJ99CgymKyNBXjQ2P9sEFgYs75qEPvs2Vz9xlBxIDsyWKOwg')) {
+    if (!saved || saved.includes('AKfycbyy1NEx0A68DSqfdJl11aLJ99CgymKyNBXjQ2P9sEFgYs75qEPvs2Vz9xlBxIDsyWKOwg') || saved.includes('AKfycbwlmtVsaOE8pHxtS2AyV62AK9GTBowBdwP7TBDXFevpVPkrXl774Ib_ckjNwL4eA0MjRw')) {
       return DEFAULT_GAS_URL;
     }
     return saved;
