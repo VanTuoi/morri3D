@@ -33,3 +33,5 @@ vite.config.d.ts
 secret-key.json
 *secret*
 *key*.json
+
+.agents

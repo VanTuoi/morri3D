@@ -1,78 +1,171 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Clock, 
   Printer, 
   CheckCircle, 
   Box, 
   Search, 
-  Weight, 
   PlusCircle, 
   Palette, 
   Database, 
-  X 
+  X,
+  TrendingUp,
+  User,
+  ArrowRight,
+  ChevronRight,
+  SlidersHorizontal,
+  Edit2
 } from 'lucide-react';
-import { Order, Filament, STATUSES, STATUS_COLORS, BASIC_COLORS, formatCurrency, formatDate } from '../types';
+import { Order, Filament, STATUSES, BASIC_COLORS, formatCurrency, formatDate } from '../types';
+import { StatusBadge } from './ui/StatusBadge';
 
+/* ==============================================================================
+ * DASHBOARD TAB (Minimalist Strip & High-Density Table)
+ * ============================================================================== */
 interface DashboardTabProps {
   stats: { totalOrders: number; revenue: number; printing: number; pending: number };
   orders: Order[];
   theme: 'dark' | 'light';
+  onNavigateTab?: (tab: 'orders' | 'inventory' | 'add') => void;
+  onOpenOrderModal?: (order: Order) => void;
 }
 
-export const DashboardTab: React.FC<DashboardTabProps> = ({ stats, orders, theme }) => (
-  <div className="p-4 space-y-6 animate-in fade-in duration-500">
-    <div className={`relative overflow-hidden ${theme === 'light' ? 'bg-gradient-to-br from-rose-400 via-orange-300 to-amber-200 text-gray-900 border-white/60 shadow-[0_8px_32px_rgba(251,146,60,0.15)]' : 'bg-gradient-to-br from-rose-500/80 via-orange-400/80 to-amber-300/80 text-gray-900 border-white/40 shadow-[0_8px_32px_rgba(251,146,60,0.3)]'} rounded-[2rem] p-6 backdrop-blur-xl border`}>
-      <div className="absolute top-0 right-0 w-32 h-32 bg-white/30 rounded-full blur-2xl -mr-10 -mt-10"></div>
-      <h2 className="text-gray-900/80 text-sm font-semibold mb-1 uppercase tracking-wider">Doanh thu hoàn thành</h2>
-      <div className="text-4xl font-black tracking-tight">{formatCurrency(stats.revenue)}</div>
-      <div className="mt-6 flex items-center text-xs font-medium bg-white/40 backdrop-blur-md w-fit px-4 py-2 rounded-full shadow-sm border border-white/25">
-        <Clock size={14} className="mr-2" />
-        <span>Cập nhật hôm nay</span>
+export const DashboardTab: React.FC<DashboardTabProps> = ({ 
+  stats, 
+  orders, 
+  theme,
+  onNavigateTab,
+  onOpenOrderModal
+}) => {
+  const isDark = theme === 'dark';
+
+  const recentOrders = useMemo(() => {
+    return [...orders]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 6);
+  }, [orders]);
+
+  const completedCount = orders.filter(o => o.status === STATUSES.COMPLETED).length;
+  const completionRate = stats.totalOrders > 0 ? Math.round((completedCount / stats.totalOrders) * 100) : 0;
+
+  return (
+    <div className="space-y-3.5 sm:space-y-5 animate-in fade-in duration-200 max-w-6xl mx-auto">
+      {/* Top Metrics Strip */}
+      <div className={`rounded-xl sm:rounded-2xl border divide-y sm:divide-y-0 sm:divide-x grid grid-cols-2 sm:grid-cols-4 ${
+        isDark ? 'bg-zinc-900/50 border-zinc-800 divide-zinc-800' : 'bg-white border-zinc-200 divide-zinc-200'
+      }`}>
+        <div className="p-3 sm:p-5">
+          <div className="text-[10px] sm:text-[11px] font-medium opacity-60 uppercase tracking-wider">Doanh thu</div>
+          <div className="text-lg sm:text-2xl font-black text-orange-500 mt-0.5 sm:mt-1">
+            {formatCurrency(stats.revenue)}
+          </div>
+          <div className="text-[10px] sm:text-[11px] opacity-60 mt-0.5">{completionRate}% hoàn tất</div>
+        </div>
+
+        <div 
+          onClick={onNavigateTab ? () => onNavigateTab('orders') : undefined}
+          className="p-3 sm:p-5 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+        >
+          <div className="text-[10px] sm:text-[11px] font-medium opacity-60 uppercase tracking-wider flex items-center justify-between">
+            <span>Chờ in</span>
+            <Clock size={12} className="text-blue-400" />
+          </div>
+          <div className="text-lg sm:text-2xl font-black mt-0.5 sm:mt-1">{stats.pending}</div>
+          <div className="text-[10px] sm:text-[11px] opacity-60 mt-0.5">Đơn đợi máy</div>
+        </div>
+
+        <div 
+          onClick={onNavigateTab ? () => onNavigateTab('orders') : undefined}
+          className="p-3 sm:p-5 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+        >
+          <div className="text-[10px] sm:text-[11px] font-medium opacity-60 uppercase tracking-wider flex items-center justify-between">
+            <span>Đang in</span>
+            <Printer size={12} className="text-rose-400" />
+          </div>
+          <div className="text-lg sm:text-2xl font-black mt-0.5 sm:mt-1">{stats.printing}</div>
+          <div className="text-[10px] sm:text-[11px] opacity-60 mt-0.5">Đang chạy máy</div>
+        </div>
+
+        <div 
+          onClick={onNavigateTab ? () => onNavigateTab('orders') : undefined}
+          className="p-3 sm:p-5 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+        >
+          <div className="text-[10px] sm:text-[11px] font-medium opacity-60 uppercase tracking-wider flex items-center justify-between">
+            <span>Tổng đơn</span>
+            <Box size={12} className="text-purple-400" />
+          </div>
+          <div className="text-lg sm:text-2xl font-black mt-0.5 sm:mt-1">{stats.totalOrders}</div>
+          <div className="text-[10px] sm:text-[11px] opacity-60 mt-0.5">{completedCount} đã giao</div>
+        </div>
+      </div>
+
+      {/* Recent Orders Flat Table */}
+      <div className={`rounded-xl sm:rounded-2xl border overflow-hidden ${
+        isDark ? 'bg-zinc-900/40 border-zinc-800' : 'bg-white border-zinc-200'
+      }`}>
+        <div className="px-3.5 sm:px-5 py-2.5 sm:py-3.5 border-b border-inherit flex items-center justify-between">
+          <div className="font-bold text-xs sm:text-sm flex items-center gap-1.5">
+            <span>Đơn hàng mới tạo</span>
+            <span className={`text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded-full ${isDark ? 'bg-zinc-800 text-zinc-400' : 'bg-zinc-100 text-zinc-600'}`}>
+              {recentOrders.length}
+            </span>
+          </div>
+          {onNavigateTab && (
+            <button
+              onClick={() => onNavigateTab('orders')}
+              className="text-[11px] sm:text-xs font-semibold text-orange-500 hover:text-orange-600 flex items-center gap-1 cursor-pointer"
+            >
+              <span>Xem tất cả</span>
+              <ArrowRight size={12} />
+            </button>
+          )}
+        </div>
+
+        {recentOrders.length === 0 ? (
+          <div className="text-center py-8 text-xs opacity-60">Chưa có đơn hàng nào.</div>
+        ) : (
+          <div className="divide-y divide-inherit overflow-x-auto">
+            {recentOrders.map(order => (
+              <div
+                key={order.id}
+                onClick={() => onOpenOrderModal && onOpenOrderModal(order)}
+                className="px-3.5 sm:px-5 py-2.5 sm:py-3 flex items-center justify-between gap-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-xs"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="font-mono font-bold text-orange-500 flex-shrink-0 text-xs">
+                    #{order.id}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="font-semibold text-xs sm:text-sm truncate">{order.itemName}</div>
+                    <div className="opacity-60 text-[10px] sm:text-[11px] truncate flex items-center gap-1 mt-0.5">
+                      <span>{order.customerName}</span>
+                      <span>•</span>
+                      <span>{order.materials?.length ? order.materials.map((m: any) => m.type).join(', ') : order.material || 'PLA'}</span>
+                      <span>•</span>
+                      <span>SL: {order.quantity}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5 sm:gap-3.5 flex-shrink-0">
+                  <div className="text-right">
+                    <div className="font-bold text-xs sm:text-sm">{formatCurrency(order.price)}</div>
+                    <div className="text-[9px] sm:text-[10px] opacity-60">{formatDate(order.date)}</div>
+                  </div>
+                  <StatusBadge status={order.status} size="sm" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
+  );
+};
 
-    <h3 className={`font-bold ${theme === 'light' ? 'text-gray-800' : 'text-gray-100'} text-lg ml-2`}>Thống kê máy in</h3>
-    
-    <div className="grid grid-cols-2 gap-4">
-      <div className={`${theme === 'light' ? 'bg-white/80 border-gray-200 shadow-md text-gray-800' : 'bg-white/5 border-white/10 shadow-lg text-gray-50'} backdrop-blur-xl p-5 rounded-[1.5rem] flex flex-col items-center justify-center relative overflow-hidden group`}>
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <div className="bg-blue-500/20 p-3 rounded-2xl text-blue-500 dark:text-blue-300 mb-3 border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
-          <Clock size={24} />
-        </div>
-        <span className="text-3xl font-bold">{stats.pending}</span>
-        <span className={`${theme === 'light' ? 'text-gray-500' : 'text-gray-400'} text-sm font-medium mt-1`}>Chờ in</span>
-      </div>
-      
-      <div className={`${theme === 'light' ? 'bg-white/80 border-gray-200 shadow-md text-gray-800' : 'bg-white/5 border-white/10 shadow-lg text-gray-50'} backdrop-blur-xl p-5 rounded-[1.5rem] flex flex-col items-center justify-center relative overflow-hidden group`}>
-        <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <div className="bg-rose-500/20 p-3 rounded-2xl text-rose-500 dark:text-rose-300 mb-3 border border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.2)]">
-          <Printer size={24} />
-        </div>
-        <span className="text-3xl font-bold">{stats.printing}</span>
-        <span className={`${theme === 'light' ? 'text-gray-500' : 'text-gray-400'} text-sm font-medium mt-1`}>Đang in</span>
-      </div>
-      
-      <div className={`${theme === 'light' ? 'bg-white/80 border-gray-200 shadow-md text-gray-800' : 'bg-white/5 border-white/10 shadow-lg text-gray-50'} backdrop-blur-xl p-5 rounded-[1.5rem] flex flex-col items-center justify-center relative overflow-hidden group`}>
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <div className="bg-emerald-500/20 p-3 rounded-2xl text-emerald-500 dark:text-emerald-300 mb-3 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-          <CheckCircle size={24} />
-        </div>
-        <span className="text-3xl font-bold">{orders.filter(o => o.status === STATUSES.COMPLETED).length}</span>
-        <span className={`${theme === 'light' ? 'text-gray-500' : 'text-gray-400'} text-sm font-medium mt-1`}>Hoàn thành</span>
-      </div>
-      
-      <div className={`${theme === 'light' ? 'bg-white/80 border-gray-200 shadow-md text-gray-800' : 'bg-white/5 border-white/10 shadow-lg text-gray-50'} backdrop-blur-xl p-5 rounded-[1.5rem] flex flex-col items-center justify-center relative overflow-hidden group`}>
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <div className="bg-purple-500/20 p-3 rounded-2xl text-purple-500 dark:text-purple-300 mb-3 border border-purple-500/20 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
-          <Box size={24} />
-        </div>
-        <span className="text-3xl font-bold">{stats.totalOrders}</span>
-        <span className={`${theme === 'light' ? 'text-gray-500' : 'text-gray-400'} text-sm font-medium mt-1`}>Tổng đơn</span>
-      </div>
-    </div>
-  </div>
-);
-
+/* ==============================================================================
+ * ORDERS TAB (Flat Data Table / List)
+ * ============================================================================== */
 interface OrdersTabProps {
   searchQuery: string;
   onSearchChange: (q: string) => void;
@@ -87,68 +180,140 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
   filteredOrders,
   theme,
   onOpenOrderModal
-}) => (
-  <div className="p-4 h-full flex flex-col animate-in fade-in duration-500">
-    <div className="relative mb-6">
-      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-        <Search size={18} className={theme === 'light' ? 'text-gray-500' : 'text-gray-400'} />
+}) => {
+  const isDark = theme === 'dark';
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+
+  const displayedOrders = useMemo(() => {
+    if (statusFilter === 'ALL') return filteredOrders;
+    return filteredOrders.filter(o => o.status === statusFilter);
+  }, [filteredOrders, statusFilter]);
+
+  const filterCounts = useMemo(() => {
+    return {
+      ALL: filteredOrders.length,
+      [STATUSES.PENDING]: filteredOrders.filter(o => o.status === STATUSES.PENDING).length,
+      [STATUSES.PRINTING]: filteredOrders.filter(o => o.status === STATUSES.PRINTING).length,
+      [STATUSES.COMPLETED]: filteredOrders.filter(o => o.status === STATUSES.COMPLETED).length,
+    };
+  }, [filteredOrders]);
+
+  return (
+    <div className="space-y-3 sm:space-y-4 animate-in fade-in duration-200 max-w-6xl mx-auto">
+      {/* Search & Filter Header */}
+      <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center justify-between">
+        <div className="relative flex-1">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40" />
+          <input
+            type="text"
+            className={`w-full pl-8 pr-3 py-2 text-xs rounded-xl border outline-none transition-all ${
+              isDark 
+                ? 'bg-zinc-900/60 border-zinc-800 text-white placeholder-zinc-500 focus:border-orange-500' 
+                : 'bg-white border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-orange-500'
+            }`}
+            placeholder="Tìm tên khách, mẫu in, mã đơn..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+        </div>
+
+        {/* Filter Tabs */}
+        <div className={`flex items-center p-0.5 sm:p-1 rounded-xl border overflow-x-auto scrollbar-hide flex-shrink-0 ${
+          isDark ? 'bg-zinc-900/60 border-zinc-800' : 'bg-zinc-100 border-zinc-200'
+        }`}>
+          {[
+            { key: 'ALL', label: 'Tất cả', count: filterCounts.ALL },
+            { key: STATUSES.PENDING, label: 'Chờ in', count: filterCounts[STATUSES.PENDING] || 0 },
+            { key: STATUSES.PRINTING, label: 'Đang in', count: filterCounts[STATUSES.PRINTING] || 0 },
+            { key: STATUSES.COMPLETED, label: 'Hoàn thành', count: filterCounts[STATUSES.COMPLETED] || 0 },
+          ].map(f => (
+            <button
+              key={f.key}
+              onClick={() => setStatusFilter(f.key)}
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1 ${
+                statusFilter === f.key
+                  ? isDark ? 'bg-zinc-800 text-white shadow-sm' : 'bg-white text-zinc-950 shadow-sm'
+                  : 'opacity-60 hover:opacity-100'
+              }`}
+            >
+              <span>{f.label}</span>
+              <span className="text-[9px] opacity-75 font-normal">({f.count})</span>
+            </button>
+          ))}
+        </div>
       </div>
-      <input
-        type="text"
-        className={`block w-full pl-11 pr-4 py-3.5 border ${theme === 'light' ? 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400 focus:ring-rose-400' : 'border-white/10 bg-white/5 text-white placeholder-gray-400 focus:ring-rose-400/50'} rounded-2xl leading-5 backdrop-blur-lg focus:outline-none focus:ring-2 focus:border-transparent sm:text-sm shadow-lg transition-all`}
-        placeholder="Tìm tên khách, mã đơn..."
-        value={searchQuery}
-        onChange={(e) => onSearchChange(e.target.value)}
-      />
-    </div>
 
-    <div className="flex-1 overflow-y-auto space-y-4 pb-24 scrollbar-hide">
-      {filteredOrders.length === 0 ? (
-        <div className={`text-center ${theme === 'light' ? 'text-gray-500 bg-white/70 border-gray-200' : 'text-gray-400 bg-white/5 border-white/5'} mt-10 p-6 backdrop-blur-md rounded-2xl border`}>Không tìm thấy đơn hàng nào.</div>
-      ) : (
-        filteredOrders.map(order => (
-          <div 
-            key={order.id} 
-            onClick={() => onOpenOrderModal(order)}
-            className={`${theme === 'light' ? 'bg-white/80 border-gray-200 hover:bg-white text-gray-900' : 'bg-white/5 border-white/10 hover:bg-white/10 text-gray-100'} backdrop-blur-xl p-5 rounded-[1.5rem] shadow-lg active:scale-[0.98] transition-all cursor-pointer`}
-          >
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-amber-600 dark:from-rose-300 dark:to-amber-200 tracking-wider">#{order.id}</span>
-                  <span className={`text-xs font-medium ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>{formatDate(order.date)}</span>
+      {/* Orders List / Table View (Linear style) */}
+      <div className={`rounded-xl sm:rounded-2xl border overflow-hidden ${
+        isDark ? 'bg-zinc-900/40 border-zinc-800' : 'bg-white border-zinc-200'
+      }`}>
+        {/* Table Header (Desktop only) */}
+        <div className={`hidden md:grid grid-cols-12 px-5 py-2.5 text-[11px] font-bold uppercase tracking-wider border-b border-inherit opacity-50 ${
+          isDark ? 'bg-zinc-900/80' : 'bg-zinc-50'
+        }`}>
+          <div className="col-span-2">Mã & Ngày</div>
+          <div className="col-span-4">Mẫu In & Vật liệu</div>
+          <div className="col-span-2">Khách hàng</div>
+          <div className="col-span-2 text-right">Giá tiền</div>
+          <div className="col-span-2 text-right">Trạng thái</div>
+        </div>
+
+        {displayedOrders.length === 0 ? (
+          <div className="text-center py-10 text-xs opacity-60">Không tìm thấy đơn hàng nào.</div>
+        ) : (
+          <div className="divide-y divide-inherit">
+            {displayedOrders.map(order => (
+              <div
+                key={order.id}
+                onClick={() => onOpenOrderModal(order)}
+                className="px-3.5 sm:px-5 py-2.5 sm:py-3 md:grid md:grid-cols-12 md:items-center hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-xs"
+              >
+                {/* ID & Date */}
+                <div className="col-span-2 flex md:block items-center justify-between mb-0.5 md:mb-0">
+                  <span className="font-mono font-bold text-orange-500 text-xs">
+                    #{order.id}
+                  </span>
+                  <div className="text-[10px] sm:text-[11px] opacity-50 md:mt-0.5">{formatDate(order.date)}</div>
                 </div>
-                <h4 className="font-bold mt-1 text-lg">{order.itemName}</h4>
-              </div>
-              <span className={`text-xs px-3 py-1.5 rounded-full font-medium shadow-sm ${STATUS_COLORS[order.status] || 'bg-gray-500/20 text-gray-300'}`}>
-                {order.status}
-              </span>
-            </div>
-            
-            <div className={`text-sm mb-3 flex items-center flex-wrap gap-1 ${theme === 'light' ? 'bg-gray-100 border-gray-200 text-gray-700' : 'bg-black/20 border-white/5 text-gray-300'} w-fit px-3 py-1.5 rounded-lg border`}>
-              <Box size={14} className={`mr-1 ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'}`} /> 
-              {order.materials && order.materials.length > 0 
-                ? order.materials.map((m: any) => `${m.type} (${m.color})`).join(', ')
-                : `${order.material || 'PLA'} • ${order.color || 'Mặc định'}`}
-              <span className={`mx-2 font-black ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>•</span> SL: {order.quantity}
-            </div>
-            
-            <div className={`flex justify-between items-end border-t ${theme === 'light' ? 'border-gray-100' : 'border-white/10'} pt-4 mt-2`}>
-              <div className="text-sm">
-                <span className={`${theme === 'light' ? 'text-gray-500' : 'text-gray-400'} text-xs block mb-0.5`}>Khách hàng</span>
-                <span className={`font-medium ${theme === 'light' ? 'text-gray-800' : 'text-gray-200'}`}>{order.customerName}</span>
-              </div>
-              <div className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-orange-500 to-amber-600 dark:from-rose-300 dark:via-orange-200 dark:to-amber-200 text-lg">
-                {formatCurrency(order.price)}
-              </div>
-            </div>
-          </div>
-        ))
-      )}
-    </div>
-  </div>
-);
 
+                {/* Item & Materials */}
+                <div className="col-span-4 min-w-0 mb-1 md:mb-0">
+                  <div className="font-bold text-xs sm:text-sm truncate">{order.itemName}</div>
+                  <div className="text-[10px] sm:text-[11px] opacity-60 truncate">
+                    {order.materials?.length
+                      ? order.materials.map((m: any) => `${m.type} (${m.color})`).join(', ')
+                      : `${order.material || 'PLA'} • ${order.color || 'Mặc định'}`}
+                    <span className="mx-1">•</span> SL: {order.quantity}
+                  </div>
+                </div>
+
+                {/* Customer */}
+                <div className="col-span-2 text-xs opacity-80 truncate hidden md:block">
+                  {order.customerName}
+                </div>
+
+                {/* Price */}
+                <div className="col-span-2 text-right font-bold text-xs sm:text-sm text-orange-500">
+                  {formatCurrency(order.price)}
+                </div>
+
+                {/* Status Badge */}
+                <div className="col-span-2 flex items-center justify-between md:justify-end gap-2 mt-1.5 md:mt-0 pt-1.5 md:pt-0 border-t md:border-t-0 border-inherit">
+                  <span className="md:hidden text-[10px] opacity-60">{order.customerName}</span>
+                  <StatusBadge status={order.status} size="sm" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ==============================================================================
+ * INVENTORY TAB (Flat High-Density Table)
+ * ============================================================================== */
 interface InventoryTabProps {
   filaments: Filament[];
   theme: 'dark' | 'light';
@@ -159,49 +324,107 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
   filaments,
   theme,
   onOpenFilamentModal
-}) => (
-  <div className="p-4 h-full flex flex-col animate-in fade-in duration-500">
-    <h2 className={`text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r ${theme === 'light' ? 'from-purple-600 via-pink-600 to-rose-600' : 'from-purple-300 via-pink-200 to-rose-200'} mb-6 px-2`}>Kho Nhựa</h2>
-    
-    <div className="flex-1 overflow-y-auto space-y-4 pb-24 scrollbar-hide">
-      {filaments.length === 0 ? (
-        <div className={`text-center ${theme === 'light' ? 'text-gray-500 bg-white/70 border-gray-200' : 'text-gray-400 bg-white/5 border-white/5'} mt-10 p-6 backdrop-blur-md rounded-2xl border`}>Chưa có cuộn nhựa nào trong kho.</div>
-      ) : (
-        filaments.map(item => {
-          const currentWeight = item.weight ?? (item.percentage !== undefined ? item.percentage * 10 : 1000);
-          return (
-            <div 
-              key={item.id} 
-              onClick={() => onOpenFilamentModal(item)}
-              className={`${theme === 'light' ? 'bg-white/80 border-gray-200 hover:bg-white text-gray-900' : 'bg-white/5 border-white/10 hover:bg-white/10 text-gray-100'} backdrop-blur-xl p-4 rounded-[1.5rem] shadow-lg flex items-center gap-4 transition-all cursor-pointer group`}
-            >
-              <div className={`w-12 h-12 rounded-full border-2 ${theme === 'light' ? 'border-gray-200' : 'border-white/20'} shadow-inner flex-shrink-0 flex items-center justify-center`}
-                   style={{ backgroundColor: item.colorHex }}>
-                <div className="w-4 h-4 rounded-full border border-white/40 shadow-sm" style={{ backgroundColor: item.colorHex }}></div>
-              </div>
-              
-              <div className="flex-1">
-                <h4 className="font-bold">{item.brand} • {item.type}</h4>
-                <div className={`text-sm ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'} mt-0.5`}>Màu: {item.colorName}</div>
-              </div>
-              
-              <div className={`relative overflow-hidden ${theme === 'light' ? 'text-purple-700 bg-purple-50 border-purple-200' : 'text-purple-100 bg-black/40 border-purple-500/30'} px-3.5 py-2 rounded-xl text-sm font-bold border flex items-center gap-1.5 shadow-sm`}>
-                <div 
-                  className={`absolute bottom-0 left-0 right-0 ${theme === 'light' ? 'bg-purple-300/40' : 'bg-purple-500/40'} transition-all duration-500 ease-out z-0`} 
-                  style={{ height: `${(currentWeight / 1000) * 100}%` }}
-                ></div>
-                <div className="relative z-10 flex items-center gap-1.5">
-                   <Weight size={14} /> {currentWeight}g
-                </div>
-              </div>
-            </div>
-          );
-        })
-      )}
-    </div>
-  </div>
-);
+}) => {
+  const isDark = theme === 'dark';
 
+  const totalWeightKg = useMemo(() => {
+    const sumGrams = filaments.reduce((acc, f) => {
+      const w = f.weight ?? (f.percentage !== undefined ? f.percentage * 10 : 1000);
+      return acc + w;
+    }, 0);
+    return (sumGrams / 1000).toFixed(1);
+  }, [filaments]);
+
+  return (
+    <div className="space-y-3 sm:space-y-4 animate-in fade-in duration-200 max-w-6xl mx-auto">
+      {/* Top Inventory Status Strip */}
+      <div className="flex items-center justify-between px-0.5">
+        <div>
+          <h2 className="text-xs sm:text-sm font-bold">Danh mục Nhựa In 3D</h2>
+          <p className="text-[10px] sm:text-xs opacity-60">Theo dõi cuộn nhựa và khối lượng còn lại</p>
+        </div>
+        <div className={`text-[11px] sm:text-xs px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl border font-bold ${
+          isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-300' : 'bg-white border-zinc-200 text-zinc-700'
+        }`}>
+          {filaments.length} Cuộn (~{totalWeightKg}kg)
+        </div>
+      </div>
+
+      {/* Flat Filament Table / List */}
+      <div className={`rounded-xl sm:rounded-2xl border overflow-hidden ${
+        isDark ? 'bg-zinc-900/40 border-zinc-800' : 'bg-white border-zinc-200'
+      }`}>
+        <div className={`hidden md:grid grid-cols-12 px-5 py-2 text-[11px] font-bold uppercase tracking-wider border-b border-inherit opacity-50 ${
+          isDark ? 'bg-zinc-900/80' : 'bg-zinc-50'
+        }`}>
+          <div className="col-span-4">Hãng & Màu sắc</div>
+          <div className="col-span-3">Loại Nhựa</div>
+          <div className="col-span-4">Dung lượng còn lại</div>
+          <div className="col-span-1 text-right">Chi tiết</div>
+        </div>
+
+        {filaments.length === 0 ? (
+          <div className="text-center py-8 text-xs opacity-60">Chưa có cuộn nhựa nào trong kho.</div>
+        ) : (
+          <div className="divide-y divide-inherit">
+            {filaments.map(item => {
+              const currentWeight = item.weight ?? (item.percentage !== undefined ? item.percentage * 10 : 1000);
+              const percentage = Math.min(100, Math.max(0, Math.round((currentWeight / 1000) * 100)));
+
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => onOpenFilamentModal(item)}
+                  className="px-3.5 sm:px-5 py-2.5 sm:py-3 md:grid md:grid-cols-12 md:items-center hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-xs"
+                >
+                  {/* Brand & Color Dot */}
+                  <div className="col-span-4 flex items-center gap-2.5">
+                    <div 
+                      className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border border-white/30 flex-shrink-0 shadow-sm"
+                      style={{ backgroundColor: item.colorHex }}
+                    />
+                    <div>
+                      <span className="font-bold text-xs sm:text-sm">{item.brand}</span>
+                      <span className="opacity-60 text-[11px] ml-1">{item.colorName}</span>
+                    </div>
+                  </div>
+
+                  {/* Type */}
+                  <div className="col-span-3 opacity-80 text-xs hidden md:block">
+                    {item.type}
+                  </div>
+
+                  {/* Gauge Bar */}
+                  <div className="col-span-4 my-1.5 md:my-0">
+                    <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-semibold mb-0.5 opacity-75">
+                      <span className="md:hidden">{item.type}</span>
+                      <span>{currentWeight}g ({percentage}%)</span>
+                    </div>
+                    <div className={`h-1.5 w-full rounded-full overflow-hidden ${isDark ? 'bg-zinc-800' : 'bg-zinc-200'}`}>
+                      <div 
+                        className="h-full bg-purple-500 rounded-full"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Action */}
+                  <div className="col-span-1 text-right hidden md:flex justify-end opacity-40 hover:opacity-100">
+                    <ChevronRight size={15} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ==============================================================================
+ * ADD TAB (Unified Flat Form)
+ * ============================================================================== */
 interface AddTabProps {
   addMode: 'order' | 'filament';
   setAddMode: (mode: 'order' | 'filament') => void;
@@ -238,273 +461,335 @@ export const AddTab: React.FC<AddTabProps> = ({
   onAddFilament,
   filaments,
   theme
-}) => (
-  <div className="p-4 pb-28 animate-in fade-in duration-500">
-    <div className={`flex p-1.5 ${theme === 'light' ? 'bg-gray-200/70 border-gray-300' : 'bg-white/5 border-white/10'} backdrop-blur-md rounded-2xl mb-6 shadow-inner border`}>
-      <button 
-        onClick={() => setAddMode('order')} 
-        className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${addMode === 'order' ? (theme === 'light' ? 'bg-white text-orange-600 shadow-md border border-orange-200' : 'bg-gradient-to-r from-rose-400/20 to-orange-400/20 text-orange-200 shadow-[0_0_15px_rgba(251,146,60,0.2)] border border-orange-400/30') : (theme === 'light' ? 'text-gray-600 hover:text-gray-900' : 'text-gray-400 hover:text-gray-200')}`}
-      >
-        Tạo Đơn Hàng
-      </button>
-      <button 
-        onClick={() => setAddMode('filament')} 
-        className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${addMode === 'filament' ? (theme === 'light' ? 'bg-white text-purple-600 shadow-md border border-purple-200' : 'bg-gradient-to-r from-purple-400/20 to-pink-400/20 text-purple-200 shadow-[0_0_15px_rgba(192,132,252,0.2)] border border-purple-400/30') : (theme === 'light' ? 'text-gray-600 hover:text-gray-900' : 'text-gray-400 hover:text-gray-200')}`}
-      >
-        Nhập Kho Nhựa
-      </button>
-    </div>
+}) => {
+  const isDark = theme === 'dark';
 
-    {addMode === 'order' ? (
-      <form onSubmit={onAddOrder} className="space-y-5 animate-in slide-in-from-left-4">
-        <div className={`${theme === 'light' ? 'bg-white/80 border-gray-200 text-gray-900 shadow-md' : 'bg-white/5 border-white/10 text-gray-100 shadow-lg'} backdrop-blur-xl p-5 rounded-[1.5rem] space-y-4 border`}>
-          <h3 className={`font-semibold ${theme === 'light' ? 'text-rose-600 border-gray-200' : 'text-rose-200 border-white/10'} border-b pb-3 flex items-center`}>
-            <div className="w-2 h-2 rounded-full bg-rose-400 mr-2 shadow-[0_0_8px_rgba(251,113,133,0.8)]"></div>
-            Thông tin khách hàng
-          </h3>
-          <div>
-            <label className={`block text-sm font-medium ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'} mb-1.5`}>Tên khách hàng</label>
-            <input required type="text" className={`w-full p-3 ${theme === 'light' ? 'bg-gray-100 border-gray-200 text-gray-900 placeholder-gray-400' : 'bg-black/20 border-white/10 text-white placeholder-gray-500'} border rounded-xl focus:ring-2 focus:ring-orange-400/50 outline-none transition-all`} 
-              value={newOrder.customerName} onChange={e => setNewOrder({ ...newOrder, customerName: e.target.value })} placeholder="Nhập tên..." />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className={`block text-sm font-medium ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'} mb-1.5`}>Số điện thoại</label>
-              <input required type="tel" inputMode="numeric" pattern="[0-9]*" className={`w-full p-3 ${theme === 'light' ? 'bg-gray-100 border-gray-200 text-gray-900 placeholder-gray-400' : 'bg-black/20 border-white/10 text-white placeholder-gray-500'} border rounded-xl focus:ring-2 focus:ring-orange-400/50 outline-none transition-all`} 
-                value={newOrder.phone} onChange={e => setNewOrder({ ...newOrder, phone: e.target.value })} placeholder="Nhập số điện thoại..." />
-            </div>
-            <div>
-              <label className={`block text-sm font-medium ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'} mb-1.5`}>Địa chỉ</label>
-              <input required type="text" className={`w-full p-3 ${theme === 'light' ? 'bg-gray-100 border-gray-200 text-gray-900 placeholder-gray-400' : 'bg-black/20 border-white/10 text-white placeholder-gray-500'} border rounded-xl focus:ring-2 focus:ring-orange-400/50 outline-none transition-all`} 
-                value={newOrder.address} onChange={e => setNewOrder({ ...newOrder, address: e.target.value })} placeholder="Nhập địa chỉ giao hàng..." />
-            </div>
-          </div>
-        </div>
-
-        <div className={`${theme === 'light' ? 'bg-white/80 border-gray-200 text-gray-900 shadow-md' : 'bg-white/5 border-white/10 text-gray-100 shadow-lg'} backdrop-blur-xl p-5 rounded-[1.5rem] space-y-4 border`}>
-          <h3 className={`font-semibold ${theme === 'light' ? 'text-amber-600 border-gray-200' : 'text-amber-200 border-white/10'} border-b pb-3 flex items-center`}>
-            <div className="w-2 h-2 rounded-full bg-amber-400 mr-2 shadow-[0_0_8px_rgba(251,191,36,0.8)]"></div>
-            Chi tiết in 3D
-          </h3>
-          <div>
-            <label className={`block text-sm font-medium ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'} mb-1.5`}>Tên sản phẩm (Mẫu in)</label>
-            <input required type="text" className={`w-full p-3 ${theme === 'light' ? 'bg-gray-100 border-gray-200 text-gray-900 placeholder-gray-400' : 'bg-black/20 border-white/10 text-white placeholder-gray-500'} border rounded-xl focus:ring-2 focus:ring-orange-400/50 outline-none transition-all`} 
-              value={newOrder.itemName} onChange={e => setNewOrder({ ...newOrder, itemName: e.target.value })} placeholder="Ví dụ: Mô hình Pokemon, Bánh răng..." />
-          </div>
-          
-          <div className={`${theme === 'light' ? 'bg-gray-50 border-gray-200' : 'bg-black/20 border-white/5'} p-4 rounded-xl border space-y-3`}>
-            <label className={`block text-sm font-medium ${theme === 'light' ? 'text-pink-600' : 'text-pink-200'} mb-2 flex items-center`}>
-              <Palette size={16} className="mr-1.5" /> Chọn Nhựa & Màu Sắc
-            </label>
-            
-            {newOrder.materials.map((mat: any, index: number) => (
-              <div key={index} className={`flex flex-col gap-2 ${theme === 'light' ? 'bg-white border-gray-200 shadow-sm' : 'bg-white/5 border-white/15'} p-3 rounded-lg border relative group`}>
-                <div className="w-full pr-8">
-                  <label className={`block text-xs font-medium ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'} mb-1`}>Chọn từ kho nhựa</label>
-                  <select className={`w-full p-2.5 ${theme === 'light' ? 'bg-gray-100 border-gray-200 text-gray-900' : 'bg-black/30 border-white/10 text-white'} border rounded-lg focus:ring-2 focus:ring-orange-400/50 outline-none appearance-none text-sm transition-all`}
-                    value={mat.inventoryId} onChange={e => onUpdateOrderMaterial(index, 'inventoryId', e.target.value)}>
-                    <option className={theme === 'light' ? 'bg-white text-gray-900' : 'bg-gray-800 text-white'} value="">-- Tùy chỉnh (Nhập thủ công) --</option>
-                    {filaments.map(f => {
-                      const currentWeight = f.weight ?? (f.percentage !== undefined ? f.percentage * 10 : 1000);
-                      return (
-                        <option key={f.id} className={theme === 'light' ? 'bg-white text-gray-900' : 'bg-gray-800 text-white'} value={f.id}>
-                          {f.brand} {f.type} - {f.colorName} ({currentWeight}g)
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
-                
-                {!mat.inventoryId && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
-                    <div>
-                      <label className={`block text-xs font-medium ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'} mb-1`}>Loại nhựa</label>
-                      <input type="text" required className={`w-full p-2.5 ${theme === 'light' ? 'bg-gray-100 border-gray-200 text-gray-900' : 'bg-black/30 border-white/10 text-white'} border rounded-lg focus:ring-2 focus:ring-orange-400/50 outline-none text-sm transition-all`} 
-                        value={mat.type} onChange={e => onUpdateOrderMaterial(index, 'type', e.target.value)} placeholder="VD: PLA, Resin..." />
-                    </div>
-                    <div>
-                      <label className={`block text-xs font-medium ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'} mb-1`}>Tên màu</label>
-                      <input type="text" required className={`w-full p-2.5 ${theme === 'light' ? 'bg-gray-100 border-gray-200 text-gray-900' : 'bg-black/30 border-white/10 text-white'} border rounded-lg focus:ring-2 focus:ring-orange-400/50 outline-none text-sm transition-all`} 
-                        value={mat.color} onChange={e => onUpdateOrderMaterial(index, 'color', e.target.value)} placeholder="Nhập màu..." />
-                    </div>
-                  </div>
-                )}
-                
-                {newOrder.materials.length > 1 && (
-                  <button type="button" onClick={() => onRemoveOrderMaterial(index)} className={`absolute right-3 top-3 ${theme === 'light' ? 'text-gray-400 hover:text-rose-600 bg-gray-100' : 'text-gray-500 hover:text-rose-400 bg-black/20'} p-1 rounded-md transition-colors border border-transparent`}>
-                    <X size={16} />
-                  </button>
-                )}
-              </div>
-            ))}
-            
-            <button type="button" onClick={onAddOrderMaterial} className={`w-full py-2.5 rounded-lg ${theme === 'light' ? 'bg-white border-gray-200 text-orange-600 hover:bg-orange-50' : 'bg-white/5 border-white/10 text-orange-200 hover:bg-orange-500/20'} transition-all font-medium text-sm flex items-center justify-center mt-2 shadow-sm border`}>
-              <PlusCircle size={16} className="mr-2" /> Thêm loại nhựa khác
-            </button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={`block text-sm font-medium ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'} mb-1.5`}>Số lượng</label>
-              <input required type="number" min="1" className={`w-full p-3 ${theme === 'light' ? 'bg-gray-100 border-gray-200 text-gray-900' : 'bg-black/20 border-white/10 text-white'} border rounded-xl focus:ring-2 focus:ring-orange-400/50 outline-none transition-all`} 
-                value={newOrder.quantity} onChange={e => setNewOrder({ ...newOrder, quantity: parseInt(e.target.value) || 1 })} />
-            </div>
-            <div>
-              <label className={`block text-sm font-medium ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'} mb-1.5`}>Thành tiền (VNĐ)</label>
-              <input required type="number" min="0" className={`w-full p-3 ${theme === 'light' ? 'bg-gray-100 border-gray-200 text-gray-900' : 'bg-black/20 border-white/10 text-white'} border rounded-xl focus:ring-2 focus:ring-orange-400/50 outline-none transition-all`} 
-                value={newOrder.price} onChange={e => setNewOrder({ ...newOrder, price: e.target.value })} placeholder="0" />
-            </div>
-          </div>
-        </div>
-
-        <button type="submit" className="w-full bg-gradient-to-r from-rose-400 via-orange-400 to-amber-400 text-gray-900 font-bold py-4 rounded-2xl shadow-[0_0_20px_rgba(251,146,60,0.4)] hover:shadow-[0_0_30px_rgba(251,146,60,0.6)] transition-all flex items-center justify-center transform active:scale-95 border border-white/40">
-          <PlusCircle size={22} className="mr-2" />
-          Tạo Đơn Hàng Mới
+  return (
+    <div className="space-y-3.5 sm:space-y-5 animate-in fade-in duration-200 max-w-2xl mx-auto">
+      {/* Mode Switcher */}
+      <div className={`p-1 rounded-xl border flex max-w-xs mx-auto ${
+        isDark ? 'bg-zinc-900/60 border-zinc-800' : 'bg-zinc-100 border-zinc-200'
+      }`}>
+        <button 
+          onClick={() => setAddMode('order')} 
+          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            addMode === 'order' 
+              ? (isDark ? 'bg-zinc-800 text-white shadow-sm' : 'bg-white text-zinc-950 shadow-sm') 
+              : 'opacity-60 hover:opacity-100'
+          }`}
+        >
+          Tạo đơn hàng
         </button>
-      </form>
-    ) : (
-      <form onSubmit={onAddFilament} className="space-y-5 animate-in slide-in-from-right-4">
-        <div className={`${theme === 'light' ? 'bg-white/80 border-gray-200 text-gray-900 shadow-md' : 'bg-white/5 border-white/10 text-gray-100 shadow-lg'} backdrop-blur-xl p-5 rounded-[1.5rem] space-y-5 border`}>
-          <h3 className={`font-semibold ${theme === 'light' ? 'text-purple-600 border-gray-200' : 'text-purple-200 border-white/10'} border-b pb-3 flex items-center`}>
-            <Database size={18} className="mr-2 text-purple-500 dark:text-purple-400" />
-            Thông tin thẻ nhựa
-          </h3>
-          
-          <div>
-            <label className={`block text-sm font-medium ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'} mb-1.5`}>Hãng sản xuất</label>
-            <select
-              className={`w-full p-3 ${theme === 'light' ? 'bg-gray-100 border-gray-200 text-gray-900' : 'bg-black/20 border-white/10 text-white'} border rounded-xl focus:ring-2 focus:ring-purple-400/50 outline-none appearance-none transition-all`}
-              value={newFilament.brand}
-              onChange={e => setNewFilament({ ...newFilament, brand: e.target.value })}
-            >
-              <option className={theme === 'light' ? 'bg-white text-gray-900' : 'bg-gray-800 text-white'} value="Bambu Lab">Bambu Lab</option>
-              <option className={theme === 'light' ? 'bg-white text-gray-900' : 'bg-gray-800 text-white'} value="Tinmorry">Tinmorry</option>
-              <option className={theme === 'light' ? 'bg-white text-gray-900' : 'bg-gray-800 text-white'} value="eSun">eSun</option>
-              <option className={theme === 'light' ? 'bg-white text-gray-900' : 'bg-gray-800 text-white'} value="Stem">Stem</option>
-              <option className={theme === 'light' ? 'bg-white text-gray-900' : 'bg-gray-800 text-white'} value="Khác">Khác...</option>
-            </select>
-          </div>
+        <button 
+          onClick={() => setAddMode('filament')} 
+          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            addMode === 'filament' 
+              ? (isDark ? 'bg-zinc-800 text-white shadow-sm' : 'bg-white text-zinc-950 shadow-sm') 
+              : 'opacity-60 hover:opacity-100'
+          }`}
+        >
+          Nhập kho nhựa
+        </button>
+      </div>
 
-          {newFilament.brand === 'Khác' && (
-            <div className="animate-in fade-in slide-in-from-top-2">
-              <input required type="text" placeholder="Nhập tên hãng..."
-                className={`w-full p-3 ${theme === 'light' ? 'bg-gray-100 border-gray-200 text-gray-900' : 'bg-black/20 border-white/10 text-white'} border rounded-xl focus:ring-2 focus:ring-purple-400/50 outline-none transition-all`}
-                value={newFilament.customBrand}
-                onChange={e => setNewFilament({ ...newFilament, customBrand: e.target.value })}
+      {/* Unified Single Flat Form Container */}
+      <div className={`rounded-xl sm:rounded-2xl border p-3.5 sm:p-6 ${
+        isDark ? 'bg-zinc-900/40 border-zinc-800' : 'bg-white border-zinc-200'
+      }`}>
+        {addMode === 'order' ? (
+          <form onSubmit={onAddOrder} className="space-y-3 sm:space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
+              <div>
+                <label className="block text-[11px] sm:text-xs font-semibold opacity-70 mb-1">Tên khách hàng *</label>
+                <input 
+                  required 
+                  type="text" 
+                  className={`w-full p-2.5 text-xs sm:text-sm rounded-xl border outline-none ${
+                    isDark ? 'bg-zinc-900/60 border-zinc-800 text-white' : 'bg-zinc-50 border-zinc-200'
+                  }`}
+                  value={newOrder.customerName} 
+                  onChange={e => setNewOrder({ ...newOrder, customerName: e.target.value })} 
+                  placeholder="VD: Anh Minh..." 
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] sm:text-xs font-semibold opacity-70 mb-1">Số điện thoại *</label>
+                <input 
+                  required 
+                  type="tel" 
+                  className={`w-full p-2.5 text-xs sm:text-sm rounded-xl border outline-none ${
+                    isDark ? 'bg-zinc-900/60 border-zinc-800 text-white' : 'bg-zinc-50 border-zinc-200'
+                  }`}
+                  value={newOrder.phone} 
+                  onChange={e => setNewOrder({ ...newOrder, phone: e.target.value })} 
+                  placeholder="0901234567..." 
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] sm:text-xs font-semibold opacity-70 mb-1">Địa chỉ giao hàng</label>
+              <input 
+                type="text" 
+                className={`w-full p-2.5 text-xs sm:text-sm rounded-xl border outline-none ${
+                  isDark ? 'bg-zinc-900/60 border-zinc-800 text-white' : 'bg-zinc-50 border-zinc-200'
+                }`}
+                value={newOrder.address} 
+                onChange={e => setNewOrder({ ...newOrder, address: e.target.value })} 
+                placeholder="Địa chỉ giao hàng..." 
               />
             </div>
-          )}
 
-          <div className={`grid grid-cols-1 gap-4 border-b ${theme === 'light' ? 'border-gray-200' : 'border-white/5'} pb-4`}>
-            <div>
-              <label className={`block text-sm font-medium ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'} mb-1.5`}>Loại nhựa</label>
-              <select
-                className={`w-full p-3 ${theme === 'light' ? 'bg-gray-100 border-gray-200 text-gray-900' : 'bg-black/20 border-white/10 text-white'} border rounded-xl focus:ring-2 focus:ring-purple-400/50 outline-none appearance-none transition-all`}
-                value={newFilament.type}
-                onChange={e => setNewFilament({ ...newFilament, type: e.target.value })}
-              >
-                <option className={theme === 'light' ? 'bg-white text-gray-900' : 'bg-gray-800 text-white'} value="PLA Matte">PLA Matte</option>
-                <option className={theme === 'light' ? 'bg-white text-gray-900' : 'bg-gray-800 text-white'} value="PLA Basic">PLA Basic</option>
-                <option className={theme === 'light' ? 'bg-white text-gray-900' : 'bg-gray-800 text-white'} value="PLA Silk">PLA Silk</option>
-                <option className={theme === 'light' ? 'bg-white text-gray-900' : 'bg-gray-800 text-white'} value="PLA Lite">PLA Lite</option>
-                <option className={theme === 'light' ? 'bg-white text-gray-900' : 'bg-gray-800 text-white'} value="PETG Matte">PETG Matte</option>
-                <option className={theme === 'light' ? 'bg-white text-gray-900' : 'bg-gray-800 text-white'} value="PETG Basic">PETG Basic</option>
-              </select>
+            <div className="pt-2 border-t border-inherit">
+              <label className="block text-[11px] sm:text-xs font-semibold opacity-70 mb-1">Tên sản phẩm (Mẫu in 3D) *</label>
+              <input 
+                required 
+                type="text" 
+                className={`w-full p-2.5 text-xs sm:text-sm rounded-xl border outline-none ${
+                  isDark ? 'bg-zinc-900/60 border-zinc-800 text-white' : 'bg-zinc-50 border-zinc-200'
+                }`}
+                value={newOrder.itemName} 
+                onChange={e => setNewOrder({ ...newOrder, itemName: e.target.value })} 
+                placeholder="VD: Mô hình Iron Man..." 
+              />
             </div>
-          </div>
 
-          <div className={`${theme === 'light' ? 'bg-gray-50 border-gray-200' : 'bg-black/20 border-white/5'} p-4 rounded-xl border space-y-4`}>
-            <h4 className={`text-sm font-medium ${theme === 'light' ? 'text-pink-600' : 'text-pink-200'} flex items-center`}>
-              <Palette size={16} className="mr-1.5" /> Thêm màu sắc & số lượng
-            </h4>
-            
-            <div>
-              <label className={`block text-xs font-medium ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'} mb-1.5`}>1. Chọn màu hiển thị</label>
-              <div className="flex flex-wrap gap-2.5">
+            {/* Materials List */}
+            <div className="space-y-2 pt-1">
+              <label className="block text-[11px] sm:text-xs font-semibold opacity-70">Lựa chọn nhựa in</label>
+              {newOrder.materials.map((mat: any, index: number) => (
+                <div key={index} className="flex gap-1.5 sm:gap-2 items-center">
+                  <select 
+                    className={`flex-1 p-2 text-xs rounded-xl border outline-none ${
+                      isDark ? 'bg-zinc-900/60 border-zinc-800 text-white' : 'bg-zinc-50 border-zinc-200'
+                    }`}
+                    value={mat.inventoryId} 
+                    onChange={e => onUpdateOrderMaterial(index, 'inventoryId', e.target.value)}
+                  >
+                    <option value="">-- Tự nhập thủ công --</option>
+                    {filaments.map(f => (
+                      <option key={f.id} value={f.id}>
+                        {f.brand} {f.type} - {f.colorName} ({f.weight ?? 1000}g)
+                      </option>
+                    ))}
+                  </select>
+
+                  {!mat.inventoryId && (
+                    <>
+                      <input 
+                        type="text" 
+                        required 
+                        className={`w-20 sm:w-24 p-2 text-xs rounded-xl border outline-none ${
+                          isDark ? 'bg-zinc-900/60 border-zinc-800 text-white' : 'bg-zinc-50 border-zinc-200'
+                        }`}
+                        value={mat.type} 
+                        onChange={e => onUpdateOrderMaterial(index, 'type', e.target.value)} 
+                        placeholder="Loại nhựa" 
+                      />
+                      <input 
+                        type="text" 
+                        required 
+                        className={`w-20 sm:w-24 p-2 text-xs rounded-xl border outline-none ${
+                          isDark ? 'bg-zinc-900/60 border-zinc-800 text-white' : 'bg-zinc-50 border-zinc-200'
+                        }`}
+                        value={mat.color} 
+                        onChange={e => onUpdateOrderMaterial(index, 'color', e.target.value)} 
+                        placeholder="Màu" 
+                      />
+                    </>
+                  )}
+
+                  {newOrder.materials.length > 1 && (
+                    <button 
+                      type="button" 
+                      onClick={() => onRemoveOrderMaterial(index)} 
+                      className="p-1.5 opacity-50 hover:opacity-100 text-red-400 cursor-pointer"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button 
+                type="button" 
+                onClick={onAddOrderMaterial} 
+                className="text-[11px] sm:text-xs font-semibold text-orange-500 hover:underline flex items-center gap-1 cursor-pointer pt-0.5"
+              >
+                <PlusCircle size={12} />
+                <span>Thêm loại nhựa khác</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-inherit">
+              <div>
+                <label className="block text-[11px] sm:text-xs font-semibold opacity-70 mb-1">Số lượng *</label>
+                <input 
+                  required 
+                  type="number" 
+                  min="1" 
+                  className={`w-full p-2.5 text-xs sm:text-sm rounded-xl border font-bold outline-none ${
+                    isDark ? 'bg-zinc-900/60 border-zinc-800 text-white' : 'bg-zinc-50 border-zinc-200'
+                  }`}
+                  value={newOrder.quantity} 
+                  onChange={e => setNewOrder({ ...newOrder, quantity: parseInt(e.target.value) || 1 })} 
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] sm:text-xs font-semibold opacity-70 mb-1">Thành tiền (VNĐ) *</label>
+                <input 
+                  required 
+                  type="number" 
+                  min="0" 
+                  className={`w-full p-2.5 text-xs sm:text-sm rounded-xl border font-bold outline-none ${
+                    isDark ? 'bg-zinc-900/60 border-zinc-800 text-white' : 'bg-zinc-50 border-zinc-200'
+                  }`}
+                  value={newOrder.price} 
+                  onChange={e => setNewOrder({ ...newOrder, price: e.target.value })} 
+                  placeholder="0" 
+                />
+              </div>
+            </div>
+
+            <button 
+              type="submit" 
+              className="w-full bg-orange-500 hover:bg-orange-600 active:scale-[0.99] text-white font-bold py-2.5 sm:py-3 rounded-xl shadow-sm transition-all cursor-pointer text-xs sm:text-sm mt-3"
+            >
+              Tạo Đơn Hàng
+            </button>
+          </form>
+        ) : (
+          /* Add Filament Form */
+          <form onSubmit={onAddFilament} className="space-y-3 sm:space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
+              <div>
+                <label className="block text-[11px] sm:text-xs font-semibold opacity-70 mb-1">Hãng sản xuất</label>
+                <select
+                  className={`w-full p-2.5 text-xs sm:text-sm rounded-xl border outline-none ${
+                    isDark ? 'bg-zinc-900/60 border-zinc-800 text-white' : 'bg-zinc-50 border-zinc-200'
+                  }`}
+                  value={newFilament.brand}
+                  onChange={e => setNewFilament({ ...newFilament, brand: e.target.value })}
+                >
+                  <option value="Bambu Lab">Bambu Lab</option>
+                  <option value="Tinmorry">Tinmorry</option>
+                  <option value="eSun">eSun</option>
+                  <option value="Sunlu">Sunlu</option>
+                  <option value="Stem">Stem</option>
+                  <option value="Khác">Khác...</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] sm:text-xs font-semibold opacity-70 mb-1">Loại nhựa</label>
+                <select
+                  className={`w-full p-2.5 text-xs sm:text-sm rounded-xl border outline-none ${
+                    isDark ? 'bg-zinc-900/60 border-zinc-800 text-white' : 'bg-zinc-50 border-zinc-200'
+                  }`}
+                  value={newFilament.type}
+                  onChange={e => setNewFilament({ ...newFilament, type: e.target.value })}
+                >
+                  <option value="PLA Matte">PLA Matte</option>
+                  <option value="PLA Basic">PLA Basic</option>
+                  <option value="PLA Silk">PLA Silk</option>
+                  <option value="PLA Lite">PLA Lite</option>
+                  <option value="PETG Matte">PETG Matte</option>
+                  <option value="PETG Basic">PETG Basic</option>
+                  <option value="ABS">ABS</option>
+                  <option value="TPU 95A">TPU 95A</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Color Swatch Selection */}
+            <div className="pt-2 border-t border-inherit space-y-2">
+              <label className="block text-[11px] sm:text-xs font-semibold opacity-70">Chọn màu sắc</label>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {BASIC_COLORS.map(color => (
                   <button
                     type="button"
                     key={color.hex}
                     onClick={() => setNewFilament({ ...newFilament, colorHex: color.hex, colorName: color.name })}
-                    className={`w-8 h-8 rounded-full border-2 transition-all shadow-sm ${newFilament.colorHex === color.hex ? 'border-gray-900 dark:border-white scale-110 shadow-[0_0_12px_rgba(0,0,0,0.3)]' : 'border-transparent hover:scale-105 opacity-80 hover:opacity-100'}`}
+                    className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg border transition-all cursor-pointer ${
+                      newFilament.colorHex === color.hex ? 'ring-2 ring-orange-500 scale-110' : 'opacity-80 hover:opacity-100 border-white/20'
+                    }`}
                     style={{ backgroundColor: color.hex }}
                     title={color.name}
                   />
                 ))}
-                <div className={`relative w-8 h-8 rounded-full border-2 border-dashed ${theme === 'light' ? 'border-gray-400' : 'border-white/30'} overflow-hidden flex items-center justify-center hover:opacity-100 transition-all opacity-80`}>
-                  <input type="color" className="absolute inset-[-10px] w-12 h-12 cursor-pointer opacity-0"
-                    value={newFilament.colorHex}
-                    onChange={e => setNewFilament({ ...newFilament, colorHex: e.target.value })}
-                  />
-                  <div className="w-4 h-4 rounded-full pointer-events-none" style={{ backgroundColor: newFilament.colorHex }}></div>
-                </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className={`block text-xs font-medium ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'} mb-1.5`}>2. Tên màu thương mại</label>
-                <div className="flex relative shadow-inner">
-                  <div className={`w-10 h-[42px] rounded-l-xl border-y border-l ${theme === 'light' ? 'border-gray-200 bg-gray-100' : 'border-white/10 bg-black/20'} flex-shrink-0 overflow-hidden relative flex items-center justify-center`}>
-                     <div className="w-5 h-5 rounded-full border border-white/20" style={{ backgroundColor: newFilament.colorHex, opacity: 0.9 }}></div>
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1.5">
+                <div>
+                  <label className="block text-[11px] sm:text-xs font-semibold opacity-70 mb-1">Tên màu thương mại</label>
                   <input 
-                    type="text" required
-                    className={`w-full h-[42px] p-2.5 ${theme === 'light' ? 'bg-white border-gray-200 text-gray-900' : 'bg-white/5 border-white/10 text-white'} border rounded-r-xl focus:ring-2 focus:ring-purple-400/50 outline-none text-sm transition-all`}
+                    type="text" 
+                    required
+                    className={`w-full p-2.5 text-xs sm:text-sm rounded-xl border outline-none ${
+                      isDark ? 'bg-zinc-900/60 border-zinc-800 text-white' : 'bg-zinc-50 border-zinc-200'
+                    }`}
                     value={newFilament.colorName}
                     onChange={e => setNewFilament({ ...newFilament, colorName: e.target.value })}
-                    placeholder="Nhập tên màu..."
+                    placeholder="VD: Đỏ Ruby..."
                   />
                 </div>
-              </div>
-              <div>
-                <label className={`block text-xs font-medium ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'} mb-1.5`}>3. Số lượng</label>
-                <select
-                  className={`w-full h-[42px] p-2.5 ${theme === 'light' ? 'bg-white border-gray-200 text-gray-900' : 'bg-white/5 border-white/10 text-white'} border rounded-xl focus:ring-2 focus:ring-purple-400/50 outline-none appearance-none transition-all`}
-                  value={newFilament.quantity}
-                  onChange={e => setNewFilament({ ...newFilament, quantity: parseInt(e.target.value) || 1 })}
-                >
-                  {[...Array(10)].map((_, i) => (
-                    <option key={i+1} className={theme === 'light' ? 'bg-white text-gray-900' : 'bg-gray-800 text-white'} value={i+1}>{i + 1} cuộn</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            
-            <button 
-              type="button" 
-              onClick={onAddVariation}
-              className={`w-full py-2.5 rounded-xl ${theme === 'light' ? 'bg-white border-gray-200 text-purple-700 hover:bg-purple-50' : 'bg-white/5 border-white/10 text-purple-200 hover:bg-purple-500/20'} border transition-all font-medium text-sm flex items-center justify-center`}
-            >
-              <PlusCircle size={16} className="mr-2" />
-              Thêm loại này vào danh sách
-            </button>
-          </div>
 
-          {pendingVariations.length > 0 && (
-            <div className="space-y-2 pt-2">
-              <label className={`text-sm font-medium ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>Sẽ nhập ({pendingVariations.reduce((acc, curr) => acc + curr.quantity, 0)} cuộn):</label>
-              {pendingVariations.map((v) => (
-                <div key={v.id} className={`flex justify-between items-center ${theme === 'light' ? 'bg-gray-50 border-gray-200 text-gray-800' : 'bg-white/5 border-white/10 text-gray-200'} p-2.5 px-4 rounded-xl border animate-in fade-in slide-in-from-top-2`}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-4 h-4 rounded-full shadow-sm border border-white/20" style={{ backgroundColor: v.colorHex }}></div>
-                    <span className="text-sm font-medium">{v.colorName}</span>
-                    <span className={`text-xs font-bold ${theme === 'light' ? 'text-purple-700 bg-purple-100 border-purple-200' : 'text-purple-300 bg-purple-500/20 border-purple-500/30'} px-2 py-0.5 rounded-md border`}>x{v.quantity}</span>
-                  </div>
-                  <button type="button" onClick={() => onRemoveVariation(v.id)} className={`${theme === 'light' ? 'text-gray-400 hover:text-rose-600 bg-gray-100' : 'text-gray-500 hover:text-rose-400 bg-white/5'} p-1 rounded-lg transition-colors`}>
-                    <X size={14} />
-                  </button>
+                <div>
+                  <label className="block text-[11px] sm:text-xs font-semibold opacity-70 mb-1">Số lượng cuộn</label>
+                  <select
+                    className={`w-full p-2.5 text-xs sm:text-sm rounded-xl border outline-none ${
+                      isDark ? 'bg-zinc-900/60 border-zinc-800 text-white' : 'bg-zinc-50 border-zinc-200'
+                    }`}
+                    value={newFilament.quantity}
+                    onChange={e => setNewFilament({ ...newFilament, quantity: parseInt(e.target.value) || 1 })}
+                  >
+                    {[...Array(10)].map((_, i) => (
+                      <option key={i+1} value={i+1}>{i + 1} cuộn</option>
+                    ))}
+                  </select>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
 
-        <button type="submit" className="w-full bg-gradient-to-r from-purple-400 via-pink-400 to-rose-400 text-gray-900 font-bold py-4 rounded-2xl shadow-[0_0_20px_rgba(192,132,252,0.4)] hover:shadow-[0_0_30px_rgba(192,132,252,0.6)] transition-all flex items-center justify-center transform active:scale-95 border border-white/40">
-          <CheckCircle size={22} className="mr-2" />
-          Nhập {pendingVariations.length > 0 ? `${pendingVariations.reduce((acc, curr) => acc + curr.quantity, 0)} cuộn ` : ''}Vào Kho
-        </button>
-      </form>
-    )}
-  </div>
-);
+              <button 
+                type="button" 
+                onClick={onAddVariation}
+                className="text-[11px] sm:text-xs font-semibold text-purple-500 hover:underline flex items-center gap-1 cursor-pointer pt-0.5"
+              >
+                <PlusCircle size={12} />
+                <span>Thêm màu này vào danh sách</span>
+              </button>
+            </div>
+
+            {pendingVariations.length > 0 && (
+              <div className="space-y-1 pt-2 border-t border-inherit">
+                <div className="text-[11px] font-semibold opacity-70">
+                  Sẽ nhập ({pendingVariations.reduce((acc, curr) => acc + curr.quantity, 0)} cuộn):
+                </div>
+                {pendingVariations.map(v => (
+                  <div key={v.id} className="flex justify-between items-center text-xs p-1.5 px-2.5 rounded-lg bg-black/5 dark:bg-white/5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: v.colorHex }} />
+                      <span className="font-semibold">{v.colorName}</span>
+                      <span className="opacity-60 text-[11px]">x{v.quantity}</span>
+                    </div>
+                    <button type="button" onClick={() => onRemoveVariation(v.id)} className="text-red-400 cursor-pointer">
+                      <X size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button 
+              type="submit" 
+              className="w-full bg-purple-600 hover:bg-purple-700 active:scale-[0.99] text-white font-bold py-2.5 sm:py-3 rounded-xl shadow-sm transition-all cursor-pointer text-xs sm:text-sm mt-3"
+            >
+              Nhập {pendingVariations.length > 0 ? `${pendingVariations.reduce((acc, curr) => acc + curr.quantity, 0)} cuộn ` : ''}Vào Kho
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};

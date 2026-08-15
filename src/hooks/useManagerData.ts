@@ -10,8 +10,19 @@ import {
   parseJwt 
 } from '../types';
 
+const DEV_USER: UserInfo = {
+  name: 'Dev Admin',
+  email: 'tuoitran62002@gmail.com',
+  picture: '',
+  sub: 'dev-mode'
+};
+
 export function useManagerData() {
   const [user, setUser] = useState<UserInfo | null>(() => {
+    if (import.meta.env.VITE_BYPASS_AUTH === 'true') {
+      const saved = localStorage.getItem('3dManager_user');
+      return saved ? JSON.parse(saved) : DEV_USER;
+    }
     const saved = localStorage.getItem('3dManager_user');
     return saved ? JSON.parse(saved) : null;
   });
@@ -72,6 +83,11 @@ export function useManagerData() {
 
   useEffect(() => {
     localStorage.setItem('3dManager_theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   }, [theme]);
 
   useEffect(() => {
@@ -277,8 +293,47 @@ export function useManagerData() {
     setIsSettingModalOpen(false);
   };
 
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  const toggleTheme = (e?: React.MouseEvent) => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+
+    if (typeof document !== 'undefined' && 'startViewTransition' in document) {
+      const x = e?.clientX ?? (window.innerWidth - 40);
+      const y = e?.clientY ?? 40;
+      
+      const endRadius = Math.hypot(
+        Math.max(x, window.innerWidth - x),
+        Math.max(y, window.innerHeight - y)
+      );
+
+      const transition = (document as any).startViewTransition(() => {
+        setTheme(nextTheme);
+        if (nextTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      });
+
+      transition.ready.then(() => {
+        const clipPath = [
+          `circle(0px at ${x}px ${y}px)`,
+          `circle(${endRadius}px at ${x}px ${y}px)`
+        ];
+
+        document.documentElement.animate(
+          {
+            clipPath: clipPath,
+          },
+          {
+            duration: 500,
+            easing: 'ease-in-out',
+            pseudoElement: '::view-transition-new(root)',
+          }
+        );
+      });
+    } else {
+      setTheme(nextTheme);
+    }
   };
 
   const filteredOrders = useMemo(() => {
