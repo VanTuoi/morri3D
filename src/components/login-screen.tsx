@@ -111,29 +111,45 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   }, [isDark])
 
   useEffect(() => {
-    if ((window as any).google?.accounts?.id) {
-      const cid = googleClientId || 'YOUR_GOOGLE_CLIENT_ID'
+    let timer: NodeJS.Timeout | null = null
+    let retries = 0
 
-      try {
-        ;(window as any).google.accounts.id.initialize({
-          client_id: cid,
-          callback: onCredentialResponse,
-          auto_select: false
-        })
-
-        if (googleBtnRef.current) {
-          googleBtnRef.current.innerHTML = ''
-          ;(window as any).google.accounts.id.renderButton(googleBtnRef.current, {
-            theme: isDark ? 'filled_black' : 'outline',
-            size: 'large',
-            shape: 'pill',
-            text: 'signin_with',
-            width: '225'
+    const initGoogleGsi = () => {
+      if ((window as any).google?.accounts?.id) {
+        const cid = googleClientId || 'YOUR_GOOGLE_CLIENT_ID'
+        try {
+          ;(window as any).google.accounts.id.initialize({
+            client_id: cid,
+            callback: onCredentialResponse,
+            auto_select: false
           })
+
+          if (googleBtnRef.current) {
+            googleBtnRef.current.innerHTML = ''
+            ;(window as any).google.accounts.id.renderButton(googleBtnRef.current, {
+              theme: isDark ? 'filled_black' : 'outline',
+              size: 'large',
+              shape: 'pill',
+              text: 'signin_with',
+              width: '225'
+            })
+          }
+        } catch (err) {
+          console.warn('Google GSI init warning:', err)
         }
-      } catch (err) {
-        console.warn('Google GSI init warning:', err)
+        if (timer) clearInterval(timer)
+      } else if (retries < 25) {
+        retries++
+      } else {
+        if (timer) clearInterval(timer)
       }
+    }
+
+    initGoogleGsi()
+    timer = setInterval(initGoogleGsi, 300)
+
+    return () => {
+      if (timer) clearInterval(timer)
     }
   }, [googleClientId, theme, isDark, onCredentialResponse])
 

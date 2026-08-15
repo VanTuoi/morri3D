@@ -22,7 +22,7 @@ export default defineConfig(({ mode }) => {
         registerType: 'autoUpdate',
         filename: 'sw.js',
         workbox: {
-          globPatterns: ['**/*.{js,css,ico,png,svg,woff2,webm,html}'],
+          globPatterns: ['**/*.{js,css,ico,png,svg,woff2,webm}'],
           cleanupOutdatedCaches: true,
           clientsClaim: true,
           skipWaiting: true,
