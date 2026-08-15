@@ -7,31 +7,62 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+.pnp
+.pnp.js
+
+# Production / Build
 dist
 dist-ssr
-*.local
+dev-dist
+build
+out
 *.tsbuildinfo
-vite.config.js
-vite.config.d.ts
 
-# Editor directories and files
+# Environment variables & Secrets
+.env
+.env.*
+!.env.example
+*.local
+secret-key*.json
+*.pem
+*.key
+*.cert
+
+# Vite & Caching
+.vite
+.cache
+.eslintcache
+.prettiercache
+.turbo
+.parcel-cache
+
+# Testing & Coverage
+coverage
+*.lcov
+.nyc_output
+
+# Editor & IDEs
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.swo
 
-# Environment & Secret Keys
-.env
-.env.*
-*.env
-secret-key.json
-*secret*
-*key*.json
+# OS & System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
 
 .agents

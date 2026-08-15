@@ -1,138 +1,154 @@
-import React from 'react';
-import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { 
-  Settings, 
-  RefreshCw, 
-  Sun, 
-  Moon, 
-  Plus
-} from 'lucide-react';
-import { UserInfo } from '../../types';
+import React, { useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
+import { Settings, RefreshCw } from 'lucide-react'
+import gsap from 'gsap'
 
 interface HeaderProps {
-  theme: 'dark' | 'light';
-  onToggleTheme: (e?: React.MouseEvent) => void;
-  user: UserInfo | null;
-  gasUrl: string;
-  syncStatus: 'idle' | 'syncing' | 'synced' | 'error';
-  onOpenSettings: () => void;
-  onRefresh: () => void;
+  theme: 'dark' | 'light'
+  gasUrl: string
+  syncStatus: 'idle' | 'syncing' | 'synced' | 'error'
+  onOpenSettings: () => void
+  onRefresh: () => void
 }
 
-export const Header: React.FC<HeaderProps> = ({
-  theme,
-  onToggleTheme,
-  user,
-  gasUrl,
-  syncStatus,
-  onOpenSettings,
-  onRefresh
-}) => {
-  const isDark = theme === 'dark';
-  const location = useLocation();
-  const navigate = useNavigate();
+export const Header: React.FC<HeaderProps> = ({ theme, gasUrl, syncStatus, onOpenSettings, onRefresh }) => {
+  const isDark = theme === 'dark'
 
-  const getPageTitle = (pathname: string) => {
-    switch (pathname) {
-      case '/orders':
-        return 'Quản lý Đơn hàng';
-      case '/inventory':
-        return 'Kho Nhựa In 3D';
-      case '/add':
-        return 'Tạo Đơn Hàng / Nhập Kho';
-      case '/':
-      default:
-        return 'Tổng quan hệ thống';
-    }
-  };
+  const titleGradientRef = useRef<HTMLSpanElement>(null)
+  const badge3DRef = useRef<HTMLSpanElement>(null)
 
-  const isAddPage = location.pathname === '/add';
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      if (titleGradientRef.current) {
+        gsap.to(titleGradientRef.current, {
+          backgroundPosition: '200% center',
+          duration: 4,
+          repeat: -1,
+          ease: 'linear'
+        })
+      }
+
+      if (badge3DRef.current) {
+        gsap.to(badge3DRef.current, {
+          backgroundPosition: '200% center',
+          duration: 3,
+          repeat: -1,
+          ease: 'linear'
+        })
+        gsap.to(badge3DRef.current, {
+          filter: 'drop-shadow(0 0 6px rgba(249, 115, 22, 0.6))',
+          duration: 1.5,
+          repeat: -1,
+          yoyo: true,
+          ease: 'sine.inOut'
+        })
+      }
+    })
+
+    return () => ctx.revert()
+  }, [])
 
   return (
-    <header className={`sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 py-3.5 border-b backdrop-blur-xl transition-colors select-none ${
-      isDark 
-        ? 'bg-[#09090b]/80 border-zinc-800/80 text-zinc-100' 
-        : 'bg-white/80 border-zinc-200/80 text-zinc-900'
-    }`}>
-      {/* Left: Mobile Brand & Desktop Breadcrumbs */}
-      <div className="flex items-center gap-3">
-        {/* Mobile Logo Branding */}
-        <Link to="/" className="flex items-center gap-2.5 md:hidden cursor-pointer">
-          <div className="w-8 h-8 rounded-xl p-[1px] bg-gradient-to-tr from-amber-500 to-rose-500 flex-shrink-0">
-            <img src="/logo.png" alt="Logo" className="w-full h-full object-cover rounded-[9px]" />
+    <header
+      className={`md:hidden sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 py-3.5 border-b backdrop-blur-xl transition-colors select-none ${
+        isDark ? 'bg-[#09090b]/80 border-zinc-800/80 text-zinc-100' : 'bg-white/80 border-zinc-200/80 text-zinc-900'
+      }`}
+    >
+      <div className='flex items-center gap-3'>
+        <Link to='/' className='flex items-center gap-2.5 md:hidden cursor-pointer group'>
+          <div className='w-8 h-8 rounded-xl overflow-hidden shadow-md shadow-orange-500/20 flex-shrink-0 group-hover:scale-105 transition-transform duration-300'>
+            <img src='/logo.png' alt='Logo' className='w-full h-full object-cover rounded-xl' />
           </div>
           <div>
-            <h1 className="font-bold text-sm leading-tight flex items-center">
-              <span>Morri</span>
-              <span className="text-orange-500 ml-1">3D</span>
+            <h1 className='font-black text-sm leading-tight flex items-center select-none'>
+              {isDark ? (
+                <>
+                  <span
+                    ref={titleGradientRef}
+                    className='bg-clip-text text-transparent inline-block'
+                    style={{
+                      backgroundImage:
+                        'linear-gradient(90deg, #ffffff 0%, #f97316 25%, #fbbf24 50%, #f43f5e 75%, #ffffff 100%)',
+                      backgroundSize: '200% auto'
+                    }}
+                  >
+                    Morri
+                  </span>
+                  <span
+                    ref={badge3DRef}
+                    className='ml-1 bg-clip-text text-transparent inline-block font-black tracking-wider'
+                    style={{
+                      backgroundImage:
+                        'linear-gradient(135deg, #ff6b00 0%, #ff8800 25%, #ff0055 50%, #ffa600 75%, #ff6b00 100%)',
+                      backgroundSize: '200% auto'
+                    }}
+                  >
+                    3D
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className='text-zinc-900'>Morri</span>
+                  <span className='ml-1 px-1 py-0.2 rounded-md bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black text-[10px] shadow-sm'>
+                    3D
+                  </span>
+                </>
+              )}
             </h1>
-            <div className="flex items-center gap-1">
-              <span className={`w-1.5 h-1.5 rounded-full ${
-                gasUrl ? (syncStatus === 'syncing' ? 'bg-amber-400 animate-ping' : 'bg-emerald-400') : 'bg-zinc-500'
-              }`} />
-              <span className="text-[10px] opacity-60 font-medium">
-                {gasUrl ? 'Online DB' : 'Offline'}
+            <div className='flex items-center gap-1.5'>
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  !gasUrl
+                    ? 'bg-zinc-400 dark:bg-zinc-600'
+                    : syncStatus === 'syncing'
+                      ? 'bg-amber-400 animate-ping'
+                      : syncStatus === 'error'
+                        ? 'bg-rose-500'
+                        : 'bg-emerald-400'
+                }`}
+              />
+              <span className='text-[10px] opacity-70 font-medium'>
+                {!gasUrl
+                  ? 'Chưa kết nối'
+                  : syncStatus === 'syncing'
+                    ? 'Đang đồng bộ...'
+                    : syncStatus === 'error'
+                      ? 'Lỗi đồng bộ'
+                      : 'Đã đồng bộ'}
               </span>
             </div>
           </div>
         </Link>
+      </div>
 
-        {/* Desktop Title / Breadcrumb */}
-        <div className="hidden md:flex items-center gap-2 text-sm font-semibold">
-          <span className="opacity-50 font-normal">Morri 3D</span>
-          <span className="opacity-30">/</span>
-          <span className="font-bold text-zinc-900 dark:text-zinc-100">{getPageTitle(location.pathname)}</span>
+      <div className='flex items-center gap-2.5'>
+        <div
+          className={`flex md:hidden items-center gap-1 p-1 rounded-full border backdrop-blur-2xl shadow-lg transition-all duration-300 ${
+            isDark
+              ? 'bg-white/[0.06] border-white/15 text-zinc-300 shadow-black/40'
+              : 'bg-black/[0.04] border-black/10 text-zinc-700 shadow-orange-500/5'
+          }`}
+        >
+          {gasUrl && (
+            <button
+              onClick={onRefresh}
+              disabled={syncStatus === 'syncing'}
+              className='w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 dark:hover:bg-white/10 active:scale-90 transition-all cursor-pointer opacity-80 hover:opacity-100'
+              title='Đồng bộ Google Sheets'
+            >
+              <RefreshCw size={14} className={syncStatus === 'syncing' ? 'animate-spin text-orange-500' : ''} />
+            </button>
+          )}
+
+          <button
+            onClick={onOpenSettings}
+            className='w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 dark:hover:bg-white/10 active:scale-90 transition-all cursor-pointer opacity-80 hover:opacity-100'
+            title='Cài đặt tài khoản & dữ liệu'
+          >
+            <Settings size={14} />
+          </button>
         </div>
       </div>
-
-      {/* Right Controls */}
-      <div className="flex items-center gap-2">
-        {!isAddPage && (
-          <button
-            onClick={() => navigate('/add')}
-            className="hidden sm:flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-sm transition-all cursor-pointer"
-          >
-            <Plus size={15} />
-            <span>Thêm mới</span>
-          </button>
-        )}
-
-        {/* Sync trigger */}
-        {gasUrl && (
-          <button
-            onClick={onRefresh}
-            disabled={syncStatus === 'syncing'}
-            className={`p-2 rounded-xl border text-xs cursor-pointer transition-colors ${
-              isDark ? 'bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-zinc-300' : 'bg-zinc-100 border-zinc-200 hover:bg-zinc-200 text-zinc-700'
-            }`}
-            title="Đồng bộ Google Sheets"
-          >
-            <RefreshCw size={15} className={syncStatus === 'syncing' ? 'animate-spin' : ''} />
-          </button>
-        )}
-
-        {/* Theme Toggle Button (Mobile only, desktop is on sidebar) */}
-        <button
-          onClick={onToggleTheme}
-          className={`md:hidden p-2 rounded-xl border text-xs cursor-pointer transition-colors ${
-            isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-300' : 'bg-zinc-100 border-zinc-200 text-zinc-700'
-          }`}
-          title="Chuyển đổi giao diện sáng/tối"
-        >
-          {isDark ? <Sun size={15} /> : <Moon size={15} />}
-        </button>
-
-        {/* Settings button */}
-        <button
-          onClick={onOpenSettings}
-          className={`p-2 rounded-xl border text-xs cursor-pointer transition-colors ${
-            isDark ? 'bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-zinc-300' : 'bg-zinc-100 border-zinc-200 hover:bg-zinc-200 text-zinc-700'
-          }`}
-          title="Cài đặt tài khoản & dữ liệu"
-        >
-          <Settings size={15} />
-        </button>
-      </div>
     </header>
-  );
-};
+  )
+}

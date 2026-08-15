@@ -1,0 +1,36 @@
+{
+  "header": {
+    "search": {
+      "placeholder": "Enter course name or code...",
+      "button": "Search"
+    },
+    "login": "Login",
+    "logout": "Logout",
+    "theme": "Theme",
+    "language": "Language"
+  },
+  "pagination": {
+    "previous": "Previous Page",
+    "next": "Next Page",
+    "limit_placeholder": "Quantity",
+    "limit_values": {
+      "2": "2",
+      "5": "5",
+      "10": "10",
+      "20": "20"
+    }
+  },
+  "empty_state": {
+    "no_courses": "No courses found.",
+    "view_all": "View all courses"
+  },
+  "sort": {
+    "sort_by": "Sort by",
+    "field": "Sort field",
+    "order": "Order",
+    "asc": "Ascending",
+    "desc": "Descending",
+    "name": "Name",
+    "created_at": "Latest"
+  }
+}

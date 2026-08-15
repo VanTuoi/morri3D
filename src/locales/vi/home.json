@@ -1,0 +1,36 @@
+{
+  "header": {
+    "search": {
+      "placeholder": "Nhập tên khóa học hoặc mã...",
+      "button": "Tìm kiếm"
+    },
+    "login": "Đăng nhập",
+    "logout": "Đăng xuất",
+    "theme": "Theme",
+    "language": "Ngôn ngữ"
+  },
+  "pagination": {
+    "previous": "Trang trước",
+    "next": "Trang tiếp theo",
+    "limit_placeholder": "Số lượng",
+    "limit_values": {
+      "2": "2",
+      "5": "5",
+      "10": "10",
+      "20": "20"
+    }
+  },
+  "empty_state": {
+    "no_courses": "Không tìm thấy khóa học nào.",
+    "view_all": "Xem tất cả khóa học"
+  },
+  "sort": {
+    "sort_by": "Sắp xếp theo",
+    "field": "Sắp xếp trường",
+    "order": "Thứ tự",
+    "asc": "Tăng dần",
+    "desc": "Giảm dần",
+    "name": "Tên",
+    "created_at": "Mới nhất"
+  }
+}
