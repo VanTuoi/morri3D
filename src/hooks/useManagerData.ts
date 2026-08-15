@@ -7,7 +7,6 @@ import {
   INITIAL_ORDERS, 
   DEFAULT_GAS_URL, 
   DEFAULT_GOOGLE_CLIENT_ID, 
-  ALLOWED_EMAILS,
   parseJwt 
 } from '../types';
 
@@ -94,9 +93,9 @@ export function useManagerData() {
   const [allowedEmails, setAllowedEmails] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('3dManager_allowed_emails');
-      return saved ? JSON.parse(saved) : ALLOWED_EMAILS;
+      return saved ? JSON.parse(saved) : [];
     } catch {
-      return ALLOWED_EMAILS;
+      return [];
     }
   });
 
@@ -109,7 +108,7 @@ export function useManagerData() {
         const userEmail = (decoded.email || '').toLowerCase().trim();
         let validEmails = allowedEmails;
 
-        // Nếu có gasUrl, tải danh sách mới nhất từ Google Sheet để kiểm tra quyền truy cập theo thời gian thực
+        // Gọi API Google Apps Script để lấy danh sách email được cấp phép mới nhất từ Google Sheet
         if (gasUrl && gasUrl.startsWith('http')) {
           try {
             const res = await fetch(`${gasUrl}?action=getAll`, {
@@ -131,21 +130,19 @@ export function useManagerData() {
               }
             }
           } catch (e) {
-            console.warn('Không thể tải realtime từ Sheet, sử dụng danh sách offline:', e);
+            console.warn('Không thể kết nối tới Google Sheets, sử dụng danh sách đã lưu cache:', e);
           }
         }
 
         const normalizedAllowed = validEmails.map(e => (e || '').toLowerCase().trim()).filter(Boolean);
-        const fallbackAllowed = ALLOWED_EMAILS.map(e => (e || '').toLowerCase().trim()).filter(Boolean);
-        const finalAllowedList = normalizedAllowed.length > 0 ? normalizedAllowed : fallbackAllowed;
 
-        if (finalAllowedList.length > 0) {
-          if (!finalAllowedList.includes(userEmail)) {
-            setAuthError(`Email "${decoded.email}" không được cấp quyền truy cập hệ thống.`);
+        if (normalizedAllowed.length > 0) {
+          if (!normalizedAllowed.includes(userEmail)) {
+            setAuthError(`Email "${decoded.email}" không được cấp quyền truy cập.`);
             return;
           }
         } else {
-          setAuthError(`Chưa có email nào được cấp quyền trong Google Sheet (Tab "Users") hoặc bạn chưa Deploy phiên bản mới trên Apps Script.`);
+          setAuthError(`Không tìm thấy danh sách email được cấp phép trong tab "Users" trên Google Sheet.`);
           return;
         }
 
