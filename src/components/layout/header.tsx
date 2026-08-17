@@ -50,7 +50,7 @@ export const Header: React.FC<HeaderProps> = ({ theme, gasUrl, syncStatus, onOpe
 
   return (
     <header
-      className={`md:hidden sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 py-3.5 border-b backdrop-blur-xl transition-colors select-none ${
+      className={`md:hidden sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 header-safe-top pb-3.5 border-b backdrop-blur-xl transition-colors select-none ${
         isDark ? 'bg-[#09090b]/80 border-zinc-800/80 text-zinc-100' : 'bg-white/80 border-zinc-200/80 text-zinc-900'
       }`}
     >

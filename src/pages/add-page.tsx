@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { PlusCircle, X, ShoppingBag, Layers, Check } from 'lucide-react'
 import type { Filament, Order } from '~/types'
 import { BASIC_COLORS, STATUSES } from '~/types'
-import { Input } from '~/components/ui'
+import { Input, FilamentSelect } from '~/components/ui'
 
 const orderSchema = z.object({
   customerName: z.string().trim().min(1, 'Vui lòng nhập tên khách hàng'),
@@ -20,9 +20,9 @@ const orderSchema = z.object({
   materials: z
     .array(
       z.object({
-        inventoryId: z.string().optional(),
-        type: z.string().min(1, 'Nhập loại nhựa'),
-        color: z.string().min(1, 'Nhập màu')
+        inventoryId: z.string().min(1, 'Vui lòng chọn cuộn nhựa từ kho'),
+        type: z.string().min(1, 'Loại nhựa'),
+        color: z.string().min(1, 'Màu sắc')
       })
     )
     .min(1, 'Cần ít nhất 1 loại nhựa in'),
@@ -72,7 +72,7 @@ export const AddPage: React.FC = () => {
       phone: '',
       address: '',
       itemName: '',
-      materials: [{ inventoryId: '', type: 'PLA', color: '' }],
+      materials: [{ inventoryId: '', type: '', color: '' }],
       quantity: 1,
       price: '' as any,
       notes: ''
@@ -209,17 +209,19 @@ export const AddPage: React.FC = () => {
   }
 
   return (
-    <div className='relative space-y-4 sm:space-y-6 animate-in fade-in duration-300 max-w-2xl mx-auto'>
-      <div
-        className={`absolute -top-12 -left-12 w-72 h-72 rounded-full filter blur-[80px] pointer-events-none -z-10 transition-colors duration-500 ${
-          addMode === 'order' ? 'bg-orange-500/10 dark:bg-orange-500/15' : 'bg-teal-500/10 dark:bg-teal-500/15'
-        }`}
-      />
-      <div
-        className={`absolute top-48 -right-12 w-80 h-80 rounded-full filter blur-[90px] pointer-events-none -z-10 transition-colors duration-500 ${
-          addMode === 'order' ? 'bg-amber-500/10 dark:bg-amber-500/15' : 'bg-emerald-500/10 dark:bg-emerald-500/15'
-        }`}
-      />
+    <div className='relative overflow-x-clip space-y-4 sm:space-y-6 animate-in fade-in duration-300 max-w-2xl mx-auto'>
+      <div className='absolute inset-0 overflow-hidden pointer-events-none -z-10'>
+        <div
+          className={`absolute -top-12 -left-12 w-72 h-72 rounded-full filter blur-[80px] transition-colors duration-500 ${
+            addMode === 'order' ? 'bg-orange-500/10 dark:bg-orange-500/15' : 'bg-teal-500/10 dark:bg-teal-500/15'
+          }`}
+        />
+        <div
+          className={`absolute top-48 -right-12 w-80 h-80 rounded-full filter blur-[90px] transition-colors duration-500 ${
+            addMode === 'order' ? 'bg-amber-500/10 dark:bg-amber-500/15' : 'bg-emerald-500/10 dark:bg-emerald-500/15'
+          }`}
+        />
+      </div>
 
       <div
         className={`p-1 rounded-2xl border backdrop-blur-2xl shadow-lg max-w-xs sm:max-w-sm mx-auto flex items-center transition-all ${
@@ -320,72 +322,79 @@ export const AddPage: React.FC = () => {
               )}
             </div>
 
-            <div className='space-y-2 pt-1'>
-              <label className='block text-[11px] sm:text-xs font-semibold opacity-70'>Lựa chọn nhựa in</label>
+            <div className='space-y-2.5 pt-1'>
+              <div className='flex items-center justify-between'>
+                <label className='block text-[11px] sm:text-xs font-semibold opacity-70'>Lựa chọn nhựa in</label>
+                {materialFields.length > 0 && (
+                  <span className='text-[10px] opacity-60 font-medium'>({materialFields.length} loại nhựa)</span>
+                )}
+              </div>
+
               {materialFields.map((field, index) => {
                 const currentInventoryId = watchMaterials?.[index]?.inventoryId
+                const hasError = !!orderErrors.materials?.[index]
 
                 return (
-                  <div key={field.id} className='space-y-1'>
-                    <div className='flex gap-1.5 sm:gap-2 items-center'>
-                      <select
-                        className={`flex-1 h-9 px-3 py-1.5 text-xs rounded-xl border outline-none transition-colors ${
-                          isDark
-                            ? 'bg-zinc-800/80 border-white/10 text-zinc-100 focus:border-orange-500/50'
-                            : 'bg-white border-zinc-200 text-zinc-900 focus:border-orange-500'
-                        }`}
-                        {...registerOrder(`materials.${index}.inventoryId`, {
-                          onChange: (e) => {
-                            const val = e.target.value
-                            if (val) {
-                              const fil = filaments.find((f: Filament) => f.id === val)
-                              if (fil) {
-                                setOrderValue(`materials.${index}.type`, `${fil.brand} ${fil.type}`)
-                                setOrderValue(`materials.${index}.color`, fil.colorName)
-                              }
-                            } else {
-                              setOrderValue(`materials.${index}.type`, '')
-                              setOrderValue(`materials.${index}.color`, '')
-                            }
-                          }
-                        })}
-                      >
-                        <option value=''>-- Tự nhập thủ công --</option>
-                        {filaments.map((f: Filament) => (
-                          <option key={f.id} value={f.id}>
-                            {f.brand} {f.type} - {f.colorName} ({f.weight ?? 1000}g)
-                          </option>
-                        ))}
-                      </select>
-
-                      {!currentInventoryId && (
-                        <>
-                          <Input type='text' className='w-20 sm:w-24' {...registerOrder(`materials.${index}.type`)} />
-                          <Input type='text' className='w-20 sm:w-24' {...registerOrder(`materials.${index}.color`)} />
-                        </>
-                      )}
-
+                  <div
+                    key={field.id}
+                    className={`p-3 rounded-2xl border transition-all ${
+                      hasError
+                        ? 'border-rose-500/80 bg-rose-500/5'
+                        : 'bg-black/[0.02] dark:bg-white/[0.02] border-zinc-200/80 dark:border-white/10'
+                    } space-y-2.5`}
+                  >
+                    <div className='flex items-center justify-between gap-2'>
+                      <span className='text-xs font-bold text-zinc-600 dark:text-zinc-400'>
+                        Cuộn nhựa {materialFields.length > 1 ? `#${index + 1}` : ''}
+                      </span>
                       {materialFields.length > 1 && (
                         <button
                           type='button'
                           onClick={() => removeMaterial(index)}
-                          className='p-1.5 opacity-50 hover:opacity-100 text-red-400 cursor-pointer'
+                          className='px-2 py-1 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 rounded-lg transition-colors flex items-center gap-1 cursor-pointer font-medium'
                         >
-                          <X size={14} />
+                          <X size={13} />
+                          <span>Xóa</span>
                         </button>
                       )}
                     </div>
+
+                    <FilamentSelect
+                      value={currentInventoryId || ''}
+                      filaments={filaments}
+                      placeholder='-- Chọn cuộn nhựa từ kho --'
+                      onChange={(val) => {
+                        if (val) {
+                          const fil = filaments.find((f: Filament) => f.id === val)
+                          if (fil) {
+                            setOrderValue(`materials.${index}.inventoryId`, val, { shouldValidate: true })
+                            setOrderValue(`materials.${index}.type`, `${fil.brand} ${fil.type}`, { shouldValidate: true })
+                            setOrderValue(`materials.${index}.color`, fil.colorName, { shouldValidate: true })
+                          }
+                        } else {
+                          setOrderValue(`materials.${index}.inventoryId`, '', { shouldValidate: true })
+                          setOrderValue(`materials.${index}.type`, '', { shouldValidate: true })
+                          setOrderValue(`materials.${index}.color`, '', { shouldValidate: true })
+                        }
+                      }}
+                    />
+
+                    {hasError && (
+                      <span className='text-[10px] text-rose-500 font-medium block'>
+                        Vui lòng chọn cuộn nhựa từ kho
+                      </span>
+                    )}
                   </div>
                 )
               })}
 
               <button
                 type='button'
-                onClick={() => appendMaterial({ inventoryId: '', type: 'PLA', color: '' })}
-                className='text-[11px] sm:text-xs font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1 cursor-pointer pt-0.5'
+                onClick={() => appendMaterial({ inventoryId: '', type: '', color: '' })}
+                className='text-[11px] sm:text-xs font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1.5 cursor-pointer pt-1 hover:underline'
               >
-                <PlusCircle size={13} />
-                <span>Thêm loại nhựa khác</span>
+                <PlusCircle size={14} />
+                <span>Thêm loại nhựa khác cho đơn này</span>
               </button>
             </div>
 

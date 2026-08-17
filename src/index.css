@@ -122,12 +122,20 @@
 
 html {
     height: 100%;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
     line-height: 1.2;
 }
 
 body {
+    height: 100%;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
     font-family: 'Signika Negative', sans-serif;
     font-weight: 400;
+    touch-action: pan-y;
 }
 
 .container {
@@ -136,6 +144,16 @@ body {
     margin-right: auto;
     padding-left: 1rem;
     padding-right: 1rem;
+}
+
+.header-safe-top {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 0.875rem);
+}
+
+@supports (padding-top: max(0px)) {
+    .header-safe-top {
+        padding-top: max(0.875rem, calc(env(safe-area-inset-top, 0px) + 0.625rem));
+    }
 }
 
 /* View Transitions for ultra-smooth theme switching */

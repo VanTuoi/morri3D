@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import type { Order, OrderMaterial, Filament, UserInfo } from '~/types'
 import { STATUSES, formatCurrency, formatDateTime } from '~/types'
+import { FilamentSelect } from './ui'
 
 interface OrderModalProps {
   isOpen: boolean
@@ -90,7 +91,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       prev
         ? {
             ...prev,
-            materials: [...(prev.materials || []), { inventoryId: '', type: 'PLA', color: '' }]
+            materials: [...(prev.materials || []), { inventoryId: '', type: '', color: '' }]
           }
         : prev
     )
@@ -314,9 +315,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 </div>
               </div>
 
-              <div className='space-y-2 pt-1 border-t border-inherit/40'>
+              <div className='space-y-2.5 pt-1 border-t border-inherit/40'>
                 <div className='flex items-center justify-between'>
-                  <label className='font-semibold opacity-70'>Vật liệu / Nhựa in</label>
+                  <label className='font-semibold opacity-70 text-xs'>Vật liệu / Nhựa in</label>
                   <button
                     type='button'
                     onClick={handleAddMaterial}
@@ -328,56 +329,32 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 </div>
 
                 {(formData.materials || []).map((mat, idx) => (
-                  <div key={idx} className='flex gap-1.5 items-center'>
-                    <select
+                  <div
+                    key={idx}
+                    className='p-3 rounded-2xl border bg-black/[0.02] dark:bg-white/[0.02] border-zinc-200/80 dark:border-white/10 space-y-2.5 transition-all'
+                  >
+                    <div className='flex items-center justify-between gap-2'>
+                      <span className='text-xs font-bold text-zinc-600 dark:text-zinc-400'>
+                        Cuộn nhựa {(formData.materials || []).length > 1 ? `#${idx + 1}` : ''}
+                      </span>
+                      {(formData.materials || []).length > 1 && (
+                        <button
+                          type='button'
+                          onClick={() => handleRemoveMaterial(idx)}
+                          className='px-2 py-1 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 rounded-lg transition-colors flex items-center gap-1 cursor-pointer font-medium'
+                        >
+                          <X size={13} />
+                          <span>Xóa</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <FilamentSelect
                       value={mat.inventoryId || ''}
-                      onChange={(e) => handleMaterialChange(idx, 'inventoryId', e.target.value)}
-                      className={`flex-1 h-8 px-2.5 text-xs rounded-xl border outline-none transition-all ${
-                        isDark
-                          ? 'bg-zinc-800/80 border-white/10 text-zinc-100 focus:border-orange-500/60'
-                          : 'bg-white border-zinc-200 text-zinc-900 focus:border-orange-500'
-                      }`}
-                    >
-                      <option value=''>-- Nhập thủ công --</option>
-                      {filaments.map((f) => (
-                        <option key={f.id} value={f.id}>
-                          {f.brand} {f.type} - {f.colorName} ({f.weight ?? 1000}g)
-                        </option>
-                      ))}
-                    </select>
-
-                    {!mat.inventoryId && (
-                      <>
-                        <input
-                          type='text'
-                          placeholder='Loại nhựa'
-                          value={mat.type}
-                          onChange={(e) => handleMaterialChange(idx, 'type', e.target.value)}
-                          className={`w-20 sm:w-24 h-8 px-2 text-xs rounded-xl border outline-none ${
-                            isDark ? 'bg-zinc-800/80 border-white/10 text-zinc-100' : 'bg-white border-zinc-200'
-                          }`}
-                        />
-                        <input
-                          type='text'
-                          placeholder='Màu'
-                          value={mat.color}
-                          onChange={(e) => handleMaterialChange(idx, 'color', e.target.value)}
-                          className={`w-20 sm:w-24 h-8 px-2 text-xs rounded-xl border outline-none ${
-                            isDark ? 'bg-zinc-800/80 border-white/10 text-zinc-100' : 'bg-white border-zinc-200'
-                          }`}
-                        />
-                      </>
-                    )}
-
-                    {(formData.materials || []).length > 1 && (
-                      <button
-                        type='button'
-                        onClick={() => handleRemoveMaterial(idx)}
-                        className='p-1.5 opacity-50 hover:opacity-100 text-red-400 cursor-pointer'
-                      >
-                        <X size={13} />
-                      </button>
-                    )}
+                      filaments={filaments}
+                      placeholder='-- Chọn cuộn nhựa từ kho --'
+                      onChange={(val) => handleMaterialChange(idx, 'inventoryId', val)}
+                    />
                   </div>
                 ))}
               </div>

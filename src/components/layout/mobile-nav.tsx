@@ -46,6 +46,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ theme, ordersCount }) => {
           position: 'fixed',
           top: 'calc(100dvh - 50px)',
           left: '50%',
+          transform: 'translate(-50%, -50%)',
           zIndex: 40
         }}
       >

@@ -88,10 +88,12 @@ export const OrdersPage: React.FC = () => {
   ]
 
   return (
-    <div className='relative space-y-4 sm:space-y-6 animate-in fade-in duration-300 max-w-6xl mx-auto'>
-      <div className='absolute -top-12 -left-10 w-72 h-72 bg-orange-500/10 dark:bg-orange-500/15 rounded-full filter blur-[80px] pointer-events-none -z-10' />
-      <div className='absolute top-36 -right-10 w-80 h-80 bg-amber-500/10 dark:bg-rose-500/15 rounded-full filter blur-[90px] pointer-events-none -z-10' />
-      <div className='absolute bottom-10 left-1/4 w-64 h-64 bg-cyan-500/10 dark:bg-cyan-500/10 rounded-full filter blur-[85px] pointer-events-none -z-10' />
+    <div className='relative overflow-x-clip space-y-4 sm:space-y-6 animate-in fade-in duration-300 max-w-6xl mx-auto'>
+      <div className='absolute inset-0 overflow-hidden pointer-events-none -z-10'>
+        <div className='absolute -top-12 -left-10 w-72 h-72 bg-orange-500/10 dark:bg-orange-500/15 rounded-full filter blur-[80px]' />
+        <div className='absolute top-36 -right-10 w-80 h-80 bg-amber-500/10 dark:bg-rose-500/15 rounded-full filter blur-[90px]' />
+        <div className='absolute bottom-10 left-1/4 w-64 h-64 bg-cyan-500/10 dark:bg-cyan-500/10 rounded-full filter blur-[85px]' />
+      </div>
 
       <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-0.5'>
         <div>

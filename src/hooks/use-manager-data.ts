@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { flushSync } from 'react-dom'
 import type { Order, Filament, UserInfo } from '~/types'
-import { STATUSES, INITIAL_ORDERS, DEFAULT_GAS_URL, DEFAULT_GOOGLE_CLIENT_ID, parseJwt } from '~/types'
+import { STATUSES, DEFAULT_GAS_URL, DEFAULT_GOOGLE_CLIENT_ID, parseJwt } from '~/types'
 
 const DEV_USER: UserInfo = {
   name: 'Dev Admin',
@@ -25,15 +25,56 @@ export function useManagerData() {
   })
   const [tempClientId, setTempClientId] = useState(googleClientId)
 
-  const [orders, setOrders] = useState<Order[]>(() => {
-    const saved = localStorage.getItem('3dManager_orders')
-    return saved ? JSON.parse(saved) : INITIAL_ORDERS
+  try {
+    localStorage.removeItem('3dManager_orders')
+    localStorage.removeItem('3dManager_filaments')
+  } catch {
+    // ignore
+  }
+
+  const [orders, setOrdersState] = useState<Order[]>(() => {
+    try {
+      const saved = sessionStorage.getItem('3dManager_orders')
+      return saved ? JSON.parse(saved) : []
+    } catch {
+      return []
+    }
   })
 
-  const [filaments, setFilaments] = useState<Filament[]>(() => {
-    const saved = localStorage.getItem('3dManager_filaments')
-    return saved ? JSON.parse(saved) : []
+  const [filaments, setFilamentsState] = useState<Filament[]>(() => {
+    try {
+      const saved = sessionStorage.getItem('3dManager_filaments')
+      return saved ? JSON.parse(saved) : []
+    } catch {
+      return []
+    }
   })
+
+  // CHỐT CHẶN AN TOÀN 1: Đã tải dữ liệu thành công từ Google Sheets ít nhất 1 lần trong phiên làm việc
+  const isServerLoadedRef = useRef(false)
+  const [isServerLoaded, setIsServerLoaded] = useState(false)
+
+  // CHỐT CHẶN AN TOÀN 2: Cờ đánh dấu hệ thống đang nạp dữ liệu từ Server về máy (tránh trigger useEffect push)
+  const isSyncingFromServerRef = useRef(false)
+
+  // CHỐT CHẶN AN TOÀN 3: Chỉ khi người dùng thực sự bấm Thao tác (Thêm/Sửa/Xóa) mới cho phép đẩy lên Sheet
+  const isUserModifiedRef = useRef(false)
+
+  // Wrapper setOrders an toàn: Tự động gắn cờ isUserModified nếu không phải nạp từ server
+  const setOrders = useCallback((action: React.SetStateAction<Order[]>) => {
+    if (!isSyncingFromServerRef.current) {
+      isUserModifiedRef.current = true
+    }
+    setOrdersState(action)
+  }, [])
+
+  // Wrapper setFilaments an toàn: Tự động gắn cờ isUserModified nếu không phải nạp từ server
+  const setFilaments = useCallback((action: React.SetStateAction<Filament[]>) => {
+    if (!isSyncingFromServerRef.current) {
+      isUserModifiedRef.current = true
+    }
+    setFilamentsState(action)
+  }, [])
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'inventory' | 'add'>('dashboard')
   const [searchQuery, setSearchQuery] = useState('')
@@ -89,8 +130,6 @@ export function useManagerData() {
     notes: ''
   })
 
-  const isInitialMount = useRef(true)
-
   useEffect(() => {
     localStorage.setItem('3dManager_theme', theme)
     if (theme === 'dark') {
@@ -109,11 +148,19 @@ export function useManagerData() {
   }, [user])
 
   useEffect(() => {
-    localStorage.setItem('3dManager_orders', JSON.stringify(orders))
+    try {
+      sessionStorage.setItem('3dManager_orders', JSON.stringify(orders))
+    } catch {
+      // ignore
+    }
   }, [orders])
 
   useEffect(() => {
-    localStorage.setItem('3dManager_filaments', JSON.stringify(filaments))
+    try {
+      sessionStorage.setItem('3dManager_filaments', JSON.stringify(filaments))
+    } catch {
+      // ignore
+    }
   }, [filaments])
 
   const [allowedEmails, setAllowedEmails] = useState<string[]>(() => {
@@ -135,7 +182,6 @@ export function useManagerData() {
           const userEmail = (decoded.email || '').toLowerCase().trim()
           let validEmails = allowedEmails
 
-          // Gọi API Google Apps Script để lấy danh sách email được cấp phép mới nhất từ Google Sheet
           if (gasUrl && gasUrl.startsWith('http')) {
             try {
               const res = await fetch(`${gasUrl}?action=getAll`, {
@@ -144,17 +190,24 @@ export function useManagerData() {
               })
               const resData = await res.json()
               if (resData.success && resData.data) {
+                isSyncingFromServerRef.current = true
                 if (Array.isArray(resData.data.allowedEmails)) {
                   validEmails = resData.data.allowedEmails
                   setAllowedEmails(validEmails)
                   localStorage.setItem('3dManager_allowed_emails', JSON.stringify(validEmails))
                 }
-                if (Array.isArray(resData.data.orders) && resData.data.orders.length > 0) {
-                  setOrders(resData.data.orders)
+                if (Array.isArray(resData.data.orders)) {
+                  setOrdersState(resData.data.orders)
                 }
-                if (Array.isArray(resData.data.filaments) && resData.data.filaments.length > 0) {
-                  setFilaments(resData.data.filaments)
+                if (Array.isArray(resData.data.filaments)) {
+                  setFilamentsState(resData.data.filaments)
                 }
+                isServerLoadedRef.current = true
+                setIsServerLoaded(true)
+                isUserModifiedRef.current = false
+                setTimeout(() => {
+                  isSyncingFromServerRef.current = false
+                }, 300)
               }
             } catch (e) {
               console.warn('Không thể kết nối tới Google Sheets, sử dụng danh sách đã lưu cache:', e)
@@ -210,11 +263,13 @@ export function useManagerData() {
         const res = await response.json()
 
         if (res.success && res.data) {
-          if (Array.isArray(res.data.orders) && res.data.orders.length > 0) {
-            setOrders(res.data.orders)
+          isSyncingFromServerRef.current = true
+
+          if (Array.isArray(res.data.orders)) {
+            setOrdersState(res.data.orders)
           }
-          if (Array.isArray(res.data.filaments) && res.data.filaments.length > 0) {
-            setFilaments(res.data.filaments)
+          if (Array.isArray(res.data.filaments)) {
+            setFilamentsState(res.data.filaments)
           }
           if (Array.isArray(res.data.allowedEmails)) {
             setAllowedEmails(res.data.allowedEmails)
@@ -230,8 +285,16 @@ export function useManagerData() {
               }
             }
           }
+
+          isServerLoadedRef.current = true
+          setIsServerLoaded(true)
+          isUserModifiedRef.current = false
           setSyncStatus('synced')
           setSyncMessage('Đã đồng bộ với Google Sheets')
+
+          setTimeout(() => {
+            isSyncingFromServerRef.current = false
+          }, 500)
         } else {
           setSyncStatus('error')
           setSyncMessage(res.error || 'Lỗi đọc dữ liệu Google Sheet')
@@ -248,6 +311,19 @@ export function useManagerData() {
   const pushToGoogleSheets = useCallback(
     async (ordersData: Order[], filamentsData: Filament[]) => {
       if (!gasUrl || !gasUrl.startsWith('http')) return
+
+      if (!isServerLoadedRef.current) {
+        console.warn('[Sync Guard] Bị chặn: Chưa tải dữ liệu từ Google Sheets')
+        return
+      }
+
+      if (!isUserModifiedRef.current) {
+        return
+      }
+
+      if (isSyncingFromServerRef.current) {
+        return
+      }
 
       setSyncStatus('syncing')
       setSyncMessage('Đang lưu lên Google Sheet...')
@@ -266,6 +342,7 @@ export function useManagerData() {
           })
         })
 
+        isUserModifiedRef.current = false
         setSyncStatus('synced')
         setSyncMessage('Đã lưu lên Google Sheets')
       } catch (err: any) {
@@ -284,8 +361,7 @@ export function useManagerData() {
   }, [user, gasUrl, fetchFromGoogleSheets])
 
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false
+    if (!isServerLoadedRef.current || !isUserModifiedRef.current || isSyncingFromServerRef.current) {
       return
     }
     if (gasUrl && user) {
@@ -300,6 +376,11 @@ export function useManagerData() {
     const trimmed = tempGasUrl.trim()
     setGasUrl(trimmed)
     localStorage.setItem('3dManager_gas_url', trimmed)
+
+    isServerLoadedRef.current = false
+    setIsServerLoaded(false)
+    isUserModifiedRef.current = false
+
     if (trimmed) {
       fetchFromGoogleSheets(trimmed)
     }
@@ -616,6 +697,7 @@ export function useManagerData() {
     handleSaveFilamentEdit,
     handleDeleteFilament,
     isSettingModalOpen,
-    setIsSettingModalOpen
+    setIsSettingModalOpen,
+    isServerLoaded
   }
 }

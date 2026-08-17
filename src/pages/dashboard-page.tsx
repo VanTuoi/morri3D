@@ -17,10 +17,12 @@ export const DashboardPage: React.FC = () => {
   const completedCount = orders.filter((o: Order) => o.status === STATUSES.COMPLETED).length
 
   return (
-    <div className='relative space-y-4 sm:space-y-6 animate-in fade-in duration-300 max-w-6xl mx-auto'>
-      <div className='absolute -top-12 -left-10 w-72 h-72 bg-orange-500/10 dark:bg-orange-500/15 rounded-full filter blur-[80px] pointer-events-none -z-10' />
-      <div className='absolute top-40 -right-10 w-80 h-80 bg-rose-500/10 dark:bg-rose-500/15 rounded-full filter blur-[90px] pointer-events-none -z-10' />
-      <div className='absolute bottom-10 left-1/3 w-64 h-64 bg-amber-500/10 dark:bg-amber-500/10 rounded-full filter blur-[80px] pointer-events-none -z-10' />
+    <div className='relative overflow-x-clip space-y-4 sm:space-y-6 animate-in fade-in duration-300 max-w-6xl mx-auto'>
+      <div className='absolute inset-0 overflow-hidden pointer-events-none -z-10'>
+        <div className='absolute -top-12 -left-10 w-72 h-72 bg-orange-500/10 dark:bg-orange-500/15 rounded-full filter blur-[80px]' />
+        <div className='absolute top-40 -right-10 w-80 h-80 bg-rose-500/10 dark:bg-rose-500/15 rounded-full filter blur-[90px]' />
+        <div className='absolute bottom-10 left-1/3 w-64 h-64 bg-amber-500/10 dark:bg-amber-500/10 rounded-full filter blur-[80px]' />
+      </div>
 
       <div className='grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4'>
         <div

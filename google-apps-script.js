@@ -131,12 +131,21 @@ function saveSheetData(ss, sheetName, items) {
   var sheet = ss.getSheetByName(sheetName);
   if (!sheet) {
     sheet = ss.insertSheet(sheetName);
-  } else {
-    sheet.clear();
   }
 
-  if (!items || items.length === 0) return;
+  var defaultHeaders = {
+    'Orders': ['id', 'customerName', 'phone', 'address', 'itemName', 'materials', 'quantity', 'price', 'status', 'date', 'notes'],
+    'Filaments': ['id', 'brand', 'customBrand', 'type', 'colorHex', 'colorName', 'weight', 'date', 'notes']
+  };
 
+  if (!items || items.length === 0) {
+    sheet.clear();
+    var fallback = defaultHeaders[sheetName] || ['id'];
+    sheet.getRange(1, 1, 1, fallback.length).setValues([fallback]);
+    return;
+  }
+
+  sheet.clear();
   var headers = Object.keys(items[0]);
   var rows = [headers];
 

@@ -40,7 +40,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ managerData: m }) => {
           onRefresh={() => m.fetchFromGoogleSheets()}
         />
 
-        <main className='flex-1 overflow-y-auto p-3 sm:p-6 md:p-8 pb-20 md:pb-8 scrollbar-hide'>
+        <main className='flex-1 overflow-y-auto overflow-x-hidden w-full max-w-full p-3 sm:p-6 md:p-8 pb-20 md:pb-8 scrollbar-hide'>
           <Outlet context={m} />
         </main>
       </div>
