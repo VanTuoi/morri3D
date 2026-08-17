@@ -1,17 +1,28 @@
 import React, { useMemo } from 'react'
 import { useOutletContext, useNavigate } from 'react-router-dom'
-import { Clock, Printer, Box, ArrowRight, DollarSign, Plus } from 'lucide-react'
-import type { Order } from '~/types'
+import { Clock, Printer, Box, ArrowRight, DollarSign, Plus, Layers } from 'lucide-react'
+import type { Order, Filament } from '~/types'
 import { STATUSES, formatCurrency, formatDate } from '~/types'
 import { StatusBadge } from '~/components/ui/status-badge'
 
 export const DashboardPage: React.FC = () => {
-  const { stats, orders, theme, openOrderModal } = useOutletContext<any>()
+  const { stats, orders = [], filaments = [], theme, openOrderModal } = useOutletContext<any>()
   const navigate = useNavigate()
   const isDark = theme === 'dark'
 
+  // Helper to find filament color hex
+  const getFilamentColor = (m?: { inventoryId?: string; type?: string; color?: string }) => {
+    if (!m) return ''
+    const fil = filaments.find(
+      (f: Filament) =>
+        (m.inventoryId && f.id === m.inventoryId) ||
+        (f.colorName && m.color && f.colorName.toLowerCase() === m.color.toLowerCase())
+    )
+    return fil?.colorHex || ''
+  }
+
   const recentOrders = useMemo(() => {
-    return [...orders].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 6)
+    return [...orders].sort((a: Order, b: Order) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 6)
   }, [orders])
 
   const completedCount = orders.filter((o: Order) => o.status === STATUSES.COMPLETED).length
@@ -40,7 +51,7 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className='text-xl sm:text-2xl lg:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-500 to-rose-500 mt-1 sm:mt-2'>
-            {formatCurrency(stats.revenue)}
+            {formatCurrency(stats?.revenue || 0)}
           </div>
           <div className='text-[10px] sm:text-[11px] opacity-60 mt-1 font-medium'>{completedCount} đơn hoàn tất</div>
         </div>
@@ -61,7 +72,7 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className='text-xl sm:text-2xl lg:text-3xl font-black mt-1 sm:mt-2 text-purple-400'>
-            {stats.totalOrders}
+            {stats?.totalOrders || orders.length}
           </div>
           <div className='text-[10px] sm:text-[11px] opacity-60 mt-1 font-medium'>{completedCount} đơn đã giao</div>
         </div>
@@ -81,7 +92,9 @@ export const DashboardPage: React.FC = () => {
               <Clock size={18} className='sm:w-5 sm:h-5' strokeWidth={2.5} />
             </div>
           </div>
-          <div className='text-xl sm:text-2xl lg:text-3xl font-black mt-1 sm:mt-2 text-blue-400'>{stats.pending}</div>
+          <div className='text-xl sm:text-2xl lg:text-3xl font-black mt-1 sm:mt-2 text-blue-400'>
+            {stats?.pending || 0}
+          </div>
           <div className='text-[10px] sm:text-[11px] opacity-60 mt-1 font-medium'>Đơn đang đợi máy in</div>
         </div>
 
@@ -100,7 +113,9 @@ export const DashboardPage: React.FC = () => {
               <Printer size={18} className='sm:w-5 sm:h-5' strokeWidth={2.5} />
             </div>
           </div>
-          <div className='text-xl sm:text-2xl lg:text-3xl font-black mt-1 sm:mt-2 text-rose-400'>{stats.printing}</div>
+          <div className='text-xl sm:text-2xl lg:text-3xl font-black mt-1 sm:mt-2 text-rose-400'>
+            {stats?.printing || 0}
+          </div>
           <div className='text-[10px] sm:text-[11px] opacity-60 mt-1 font-medium'>Đang chạy in 3D</div>
         </div>
       </div>
@@ -155,45 +170,73 @@ export const DashboardPage: React.FC = () => {
           </div>
         ) : (
           <div className='divide-y divide-inherit/40'>
-            {recentOrders.map((order) => (
-              <div
-                key={order.id}
-                onClick={() => openOrderModal(order)}
-                className='px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between gap-3 hover:bg-orange-500/[0.04] dark:hover:bg-white/[0.04] transition-all cursor-pointer text-xs group'
-              >
-                <div className='flex items-center gap-3 min-w-0'>
-                  <span className='font-mono font-black text-orange-500 text-xs px-2 py-1 rounded-lg bg-orange-500/10 border border-orange-500/20 flex-shrink-0 group-hover:scale-105 transition-transform'>
-                    #{order.id}
-                  </span>
-                  <div className='min-w-0'>
-                    <div className='font-bold text-xs sm:text-sm truncate group-hover:text-orange-500 transition-colors'>
-                      {order.itemName}
-                    </div>
-                    <div className='opacity-60 text-[10px] sm:text-[11px] truncate flex items-center gap-1.5 mt-0.5'>
-                      <span className='font-semibold text-zinc-700 dark:text-zinc-300'>{order.customerName}</span>
-                      <span>•</span>
-                      <span className='px-1.5 py-0.2 rounded bg-black/5 dark:bg-white/10 font-mono text-[10px]'>
-                        {order.materials?.length
-                          ? order.materials.map((m: any) => m.type).join(', ')
-                          : order.material || 'PLA'}
-                      </span>
-                      <span>•</span>
-                      <span>SL: {order.quantity}</span>
-                    </div>
-                  </div>
-                </div>
+            {recentOrders.map((order: Order) => {
+              const mats =
+                order.materials && order.materials.length > 0
+                  ? order.materials
+                  : [{ type: order.material || 'PLA', color: order.color || 'Mặc định' }]
 
-                <div className='flex items-center gap-2.5 sm:gap-4 flex-shrink-0'>
-                  <div className='text-right'>
-                    <div className='font-black text-xs sm:text-sm text-orange-500 sm:text-inherit'>
-                      {formatCurrency(order.price)}
+              const hexList = mats.map((m: any) => getFilamentColor(m)).filter(Boolean)
+
+              return (
+                <div
+                  key={order.id}
+                  onClick={() => openOrderModal(order)}
+                  className='px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between gap-3 hover:bg-orange-500/[0.04] dark:hover:bg-white/[0.04] transition-all cursor-pointer text-xs group'
+                >
+                  <div className='flex items-center gap-3 min-w-0'>
+                    {/* Visual Filament Color Swatch Dots at the Start */}
+                    <div className='flex items-center -space-x-2 flex-shrink-0'>
+                      {hexList.length > 0 ? (
+                        hexList.map((hex: string, i: number) => (
+                          <div
+                            key={i}
+                            className='w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-white dark:border-zinc-800 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0'
+                            style={{ backgroundColor: hex, zIndex: 10 - i }}
+                            title={`Nhựa: ${mats[i]?.type || ''} • Màu: ${mats[i]?.color || ''}`}
+                          />
+                        ))
+                      ) : (
+                        <div className='w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-white dark:border-zinc-800 bg-orange-500/20 text-orange-500 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform'>
+                          <Layers size={14} />
+                        </div>
+                      )}
                     </div>
-                    <div className='text-[9px] sm:text-[10px] opacity-60'>{formatDate(order.date)}</div>
+
+                    <div className='min-w-0'>
+                      <div className='flex items-center gap-1.5'>
+                        <div className='font-bold text-xs sm:text-sm truncate group-hover:text-orange-500 transition-colors'>
+                          {order.itemName}
+                        </div>
+                        <span className='font-mono font-bold text-[10px] text-zinc-400 dark:text-zinc-500'>
+                          #{order.id}
+                        </span>
+                      </div>
+
+                      <div className='opacity-70 text-[10px] sm:text-[11px] truncate flex items-center gap-1.5 mt-0.5'>
+                        <span className='font-semibold text-zinc-800 dark:text-zinc-200'>{order.customerName}</span>
+                        <span>•</span>
+                        <span className='truncate font-semibold text-orange-600 dark:text-orange-400'>
+                          {mats.map((m: any) => (m.color ? `${m.type} (${m.color})` : m.type)).join(', ')}
+                        </span>
+                        <span>•</span>
+                        <span className='flex-shrink-0 opacity-80'>SL: {order.quantity}</span>
+                      </div>
+                    </div>
                   </div>
-                  <StatusBadge status={order.status} size='sm' />
+
+                  <div className='flex items-center gap-2.5 sm:gap-4 flex-shrink-0'>
+                    <div className='text-right'>
+                      <div className='font-black text-xs sm:text-sm text-orange-500 sm:text-inherit'>
+                        {formatCurrency(order.price)}
+                      </div>
+                      <div className='text-[9px] sm:text-[10px] opacity-60'>{formatDate(order.date)}</div>
+                    </div>
+                    <StatusBadge status={order.status} size='sm' />
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

@@ -411,27 +411,93 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 </label>
                 <div className='text-lg sm:text-xl font-black'>{order.itemName}</div>
                 <div className='text-xs opacity-75 mt-2 flex flex-wrap gap-1.5 items-center'>
-                  {order.materials && order.materials.length > 0 ? (
-                    order.materials.map((m, i) => (
-                      <span
-                        key={i}
-                        className='bg-black/5 dark:bg-white/5 px-2.5 py-1 rounded-lg border border-inherit flex items-center gap-1 font-medium'
-                      >
-                        <Layers size={11} className='text-orange-400 opacity-80' />
-                        <span>{m.type}</span>
-                        <span className='opacity-60'>({m.color})</span>
-                      </span>
-                    ))
-                  ) : (
-                    <span className='bg-black/5 dark:bg-white/5 px-2.5 py-1 rounded-lg border border-inherit flex items-center gap-1 font-medium'>
-                      <Layers size={11} className='text-orange-400 opacity-80' />
-                      <span>{order.material || 'PLA'}</span>
-                      <span className='opacity-60'>({order.color || 'Mặc định'})</span>
-                    </span>
-                  )}
                   <span className='bg-black/5 dark:bg-white/5 px-2.5 py-1 rounded-lg border border-inherit font-medium'>
                     Số lượng: <strong className='ml-1 font-black'>{order.quantity}</strong>
                   </span>
+                </div>
+              </div>
+
+              {/* ===== DEDICATED MATERIAL & COLOR PREVIEW BOX ===== */}
+              <div className='bg-black/5 dark:bg-white/5 p-4 rounded-2xl border border-inherit space-y-3'>
+                <div className='flex items-center justify-between'>
+                  <h4 className='text-xs font-bold uppercase tracking-wider opacity-60 flex items-center gap-1.5'>
+                    <Layers size={13} className='text-orange-400' />
+                    <span>Vật liệu & Màu nhựa in 3D</span>
+                  </h4>
+                  <span className='text-[10px] font-mono opacity-60 font-semibold'>
+                    {(order.materials && order.materials.length > 0 ? order.materials.length : 1)} cuộn nhựa
+                  </span>
+                </div>
+
+                <div className='grid grid-cols-1 sm:grid-cols-2 gap-2.5'>
+                  {(order.materials && order.materials.length > 0
+                    ? order.materials
+                    : [{ type: order.material || 'PLA', color: order.color || 'Mặc định', inventoryId: '' }]
+                  ).map((m: any, idx: number) => {
+                    const fil = filaments.find(
+                      (f) =>
+                        (m.inventoryId && f.id === m.inventoryId) ||
+                        (f.colorName && m.color && f.colorName.toLowerCase() === m.color.toLowerCase())
+                    )
+                    const hex = fil?.colorHex || ''
+                    const formatHex = hex
+                      ? hex.trim().startsWith('#')
+                        ? hex.trim().toUpperCase()
+                        : `#${hex.trim().toUpperCase()}`
+                      : ''
+                    const weight =
+                      fil !== undefined
+                        ? (fil.weight ?? (fil.percentage !== undefined ? fil.percentage * 10 : 1000))
+                        : null
+
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-3 rounded-xl border transition-all flex items-center gap-3 relative overflow-hidden ${
+                          isDark
+                            ? 'bg-zinc-800/80 border-white/10 text-zinc-100'
+                            : 'bg-white border-zinc-200 text-zinc-900 shadow-xs'
+                        }`}
+                      >
+                        {hex && (
+                          <div
+                            className='absolute top-0 right-0 w-16 h-16 rounded-bl-full pointer-events-none opacity-20'
+                            style={{ backgroundColor: hex }}
+                          />
+                        )}
+
+                        {/* Color Swatch Circle */}
+                        <div className='relative flex-shrink-0'>
+                          <div
+                            className='w-8 h-8 rounded-full border-2 border-white dark:border-zinc-700 shadow-md flex items-center justify-center'
+                            style={{ backgroundColor: hex || '#f97316' }}
+                          />
+                        </div>
+
+                        {/* Info details */}
+                        <div className='min-w-0 flex-1 z-10'>
+                          <div className='flex items-center gap-1.5 flex-wrap'>
+                            <span className='font-black text-xs truncate'>{m.type || fil?.type || 'PLA'}</span>
+                            {formatHex && (
+                              <span className='font-mono text-[9px] font-bold px-1.5 py-0.2 rounded bg-black/5 dark:bg-white/10 text-zinc-600 dark:text-zinc-300'>
+                                {formatHex}
+                              </span>
+                            )}
+                          </div>
+                          <div className='text-[11px] opacity-75 flex items-center justify-between mt-0.5'>
+                            <span className='truncate font-semibold text-orange-500/90 dark:text-orange-400'>
+                              {m.color || fil?.colorName || 'Mặc định'}
+                            </span>
+                            {weight !== null && (
+                              <span className='text-[10px] font-mono opacity-70 ml-1 flex-shrink-0'>
+                                còn ~{weight}g
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
 
