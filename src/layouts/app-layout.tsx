@@ -4,6 +4,7 @@ import { Sidebar } from '~/components/layout/sidebar'
 import { Header } from '~/components/layout/header'
 import { MobileNav } from '~/components/layout/mobile-nav'
 import { OrderModal, FilamentModal, SettingModal } from '~/components/modal'
+import { FloatingPromoPopup } from '~/components/ui'
 
 interface AppLayoutProps {
   managerData: any
@@ -83,6 +84,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ managerData: m }) => {
         onLogout={m.handleLogout}
         onPushToSheet={m.pushToGoogleSheets}
       />
+
+      <FloatingPromoPopup theme={m.theme} />
     </div>
   )
 }

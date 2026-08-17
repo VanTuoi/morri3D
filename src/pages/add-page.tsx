@@ -56,7 +56,6 @@ export const AddPage: React.FC = () => {
 
   const [pendingVariations, setPendingVariations] = useState<any[]>([])
 
-  // Order Form
   const {
     register: registerOrder,
     control: controlOrder,
@@ -90,7 +89,6 @@ export const AddPage: React.FC = () => {
 
   const watchMaterials = watchOrder('materials')
 
-  // Filament Form
   const {
     register: registerFilament,
     handleSubmit: handleSubmitFilament,
@@ -122,7 +120,6 @@ export const AddPage: React.FC = () => {
     }
   }, [tabParam, setAddMode])
 
-  // Order Submit
   const onOrderSubmit = (data: OrderFormValues) => {
     const orderToAdd: Order = {
       id: `3D-${Math.floor(Math.random() * 1000)
@@ -145,7 +142,6 @@ export const AddPage: React.FC = () => {
     navigate('/orders')
   }
 
-  // Filament Add Variation
   const onAddVariation = () => {
     const currentFilament = watchFilament()
     if (!currentFilament.colorName?.trim()) {
@@ -168,7 +164,6 @@ export const AddPage: React.FC = () => {
     setPendingVariations((prev) => prev.filter((v) => v.id !== id))
   }
 
-  // Filament Submit
   const onFilamentSubmit = (data: FilamentFormValues) => {
     const finalBrand = data.brand === 'Khác' ? data.customBrand || 'Chưa rõ' : data.brand
 
@@ -368,7 +363,9 @@ export const AddPage: React.FC = () => {
                           const fil = filaments.find((f: Filament) => f.id === val)
                           if (fil) {
                             setOrderValue(`materials.${index}.inventoryId`, val, { shouldValidate: true })
-                            setOrderValue(`materials.${index}.type`, `${fil.brand} ${fil.type}`, { shouldValidate: true })
+                            setOrderValue(`materials.${index}.type`, `${fil.brand} ${fil.type}`, {
+                              shouldValidate: true
+                            })
                             setOrderValue(`materials.${index}.color`, fil.colorName, { shouldValidate: true })
                           }
                         } else {
@@ -442,7 +439,6 @@ export const AddPage: React.FC = () => {
             </button>
           </form>
         ) : (
-          /* Add Filament Form */
           <form onSubmit={handleSubmitFilament(onFilamentSubmit)} className='space-y-3.5 sm:space-y-4'>
             <div className='flex items-center gap-2 pb-2 border-b border-inherit/40'>
               <div className='w-2 h-2 rounded-full bg-teal-500 shadow-[0_0_8px_rgba(20,184,166,0.8)]' />

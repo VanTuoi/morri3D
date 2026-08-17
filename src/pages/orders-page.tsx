@@ -35,7 +35,6 @@ export const OrdersPage: React.FC = () => {
   const navigate = useNavigate()
   const isDark = theme === 'dark'
 
-  // Helper to find filament color hex
   const getFilamentColor = (m?: { inventoryId?: string; type?: string; color?: string }) => {
     if (!m) return ''
     const fil = filaments.find(
@@ -46,7 +45,6 @@ export const OrdersPage: React.FC = () => {
     return fil?.colorHex || ''
   }
 
-  // View Mode state (grid / list)
   const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
     return (localStorage.getItem('3dManager_orders_view') as 'list' | 'grid') || 'list'
   })
@@ -55,7 +53,6 @@ export const OrdersPage: React.FC = () => {
     localStorage.setItem('3dManager_orders_view', viewMode)
   }, [viewMode])
 
-  // Filter & Sort States
   const [showFilters, setShowFilters] = useState<boolean>(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>('ALL')
@@ -63,7 +60,6 @@ export const OrdersPage: React.FC = () => {
   const [priceFilter, setPriceFilter] = useState<PriceFilterType>('ALL')
   const [sortBy, setSortBy] = useState<SortByType>('date-desc')
 
-  // Extract all unique material types from orders
   const uniqueMaterials = useMemo(() => {
     const set = new Set<string>()
     orders.forEach((o: Order) => {
@@ -78,7 +74,6 @@ export const OrdersPage: React.FC = () => {
     return Array.from(set).filter(Boolean).sort()
   }, [orders])
 
-  // Status statistics based on raw orders
   const statusCounts: Record<string, number> = useMemo(() => {
     return {
       ALL: orders.length,
@@ -89,7 +84,6 @@ export const OrdersPage: React.FC = () => {
     }
   }, [orders])
 
-  // Count active filters (excluding search)
   const activeFilterCount = useMemo(() => {
     let count = 0
     if (statusFilter !== 'ALL') count++
@@ -99,12 +93,10 @@ export const OrdersPage: React.FC = () => {
     return count
   }, [statusFilter, materialFilter, priceFilter, sortBy])
 
-  // Check if any filter or search is active
   const isFiltered = useMemo(() => {
     return searchQuery.trim() !== '' || activeFilterCount > 0
   }, [searchQuery, activeFilterCount])
 
-  // Reset all filters
   const handleResetFilters = () => {
     setSearchQuery('')
     setStatusFilter('ALL')
@@ -113,16 +105,13 @@ export const OrdersPage: React.FC = () => {
     setSortBy('date-desc')
   }
 
-  // Filtered and sorted orders list
   const displayedOrders = useMemo(() => {
     let list = [...orders]
 
-    // 1. Status filter
     if (statusFilter !== 'ALL') {
       list = list.filter((o: Order) => o.status === statusFilter)
     }
 
-    // 2. Material filter
     if (materialFilter !== 'ALL') {
       list = list.filter((o: Order) => {
         if (o.materials && o.materials.length > 0) {
@@ -132,7 +121,6 @@ export const OrdersPage: React.FC = () => {
       })
     }
 
-    // 3. Price range filter
     if (priceFilter === 'UNDER_100K') {
       list = list.filter((o: Order) => (o.price || 0) < 100000)
     } else if (priceFilter === '100K_500K') {
@@ -141,7 +129,6 @@ export const OrdersPage: React.FC = () => {
       list = list.filter((o: Order) => (o.price || 0) > 500000)
     }
 
-    // 4. Search query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim()
       list = list.filter((o: Order) => {
@@ -154,7 +141,10 @@ export const OrdersPage: React.FC = () => {
 
         let materialText = (o.material || '').toLowerCase()
         if (o.materials && o.materials.length > 0) {
-          materialText = o.materials.map((m: OrderMaterial) => `${m.type} ${m.color}`).join(' ').toLowerCase()
+          materialText = o.materials
+            .map((m: OrderMaterial) => `${m.type} ${m.color}`)
+            .join(' ')
+            .toLowerCase()
         }
 
         return (
@@ -170,7 +160,6 @@ export const OrdersPage: React.FC = () => {
       })
     }
 
-    // 5. Sorting
     list.sort((a: Order, b: Order) => {
       if (sortBy === 'date-desc') {
         return new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()
@@ -196,7 +185,6 @@ export const OrdersPage: React.FC = () => {
     return list
   }, [orders, statusFilter, materialFilter, priceFilter, searchQuery, sortBy])
 
-  // Calculated statistics of displayed orders
   const stats = useMemo(() => {
     const totalAmount = displayedOrders.reduce((sum: number, o: Order) => sum + (o.price || 0), 0)
     const totalQty = displayedOrders.reduce((sum: number, o: Order) => sum + (o.quantity || 1), 0)
@@ -247,7 +235,6 @@ export const OrdersPage: React.FC = () => {
         <div className='absolute bottom-10 left-1/4 w-64 h-64 bg-cyan-500/10 dark:bg-cyan-500/10 rounded-full filter blur-[85px]' />
       </div>
 
-      {/* Header Section */}
       <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-0.5'>
         <div>
           <div className='flex items-center gap-2 flex-wrap'>
@@ -256,7 +243,6 @@ export const OrdersPage: React.FC = () => {
               <span>Danh Sách Đơn Hàng</span>
             </h1>
 
-            {/* Quick Stat Buttons */}
             <button
               type='button'
               onClick={handleResetFilters}
@@ -314,7 +300,6 @@ export const OrdersPage: React.FC = () => {
         </div>
 
         <div className='flex items-center gap-2 flex-shrink-0 self-end sm:self-auto'>
-          {/* View Mode Switcher */}
           <div
             className={`h-9 p-1 rounded-xl border flex items-center gap-0.5 backdrop-blur-xl ${
               isDark ? 'bg-zinc-900/60 border-white/10' : 'bg-white/80 border-zinc-200 shadow-sm'
@@ -352,12 +337,9 @@ export const OrdersPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter and Search Toolbar */}
       {orders.length > 0 && (
         <div className='space-y-2.5'>
-          {/* Search Bar + Filter Toggle Button */}
           <div className='flex gap-2 items-center'>
-            {/* Search Input */}
             <div className='relative flex-1'>
               <Search size={15} className='absolute left-3.5 top-1/2 -translate-y-1/2 opacity-40' />
               <input
@@ -382,7 +364,6 @@ export const OrdersPage: React.FC = () => {
               )}
             </div>
 
-            {/* Toggle Filters Button */}
             <button
               type='button'
               onClick={() => setShowFilters((prev) => !prev)}
@@ -411,14 +392,12 @@ export const OrdersPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Collapsible Filter Panel */}
           {showFilters && (
             <div
               className={`p-3 rounded-2xl border backdrop-blur-2xl shadow-sm space-y-2.5 animate-in fade-in slide-in-from-top-2 duration-200 ${
                 isDark ? 'bg-zinc-900/60 border-white/10' : 'bg-white/80 border-white/80'
               }`}
             >
-              {/* Row 1: Status Filter Pills */}
               <div className='flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-0.5'>
                 {filterTabs.map((f) => {
                   const Icon = f.icon
@@ -449,14 +428,12 @@ export const OrdersPage: React.FC = () => {
                 })}
               </div>
 
-              {/* Row 2: Secondary Dropdowns (Material, Price, Sort, Reset) */}
               <div className='flex items-center gap-2 flex-wrap text-xs pt-1 border-t border-inherit/40'>
                 <div className='flex items-center gap-1 text-zinc-500 dark:text-zinc-400 font-semibold flex-shrink-0'>
                   <Filter size={12} />
                   <span>Chi tiết:</span>
                 </div>
 
-                {/* Material Dropdown */}
                 {uniqueMaterials.length > 0 && (
                   <select
                     value={materialFilter}
@@ -478,7 +455,6 @@ export const OrdersPage: React.FC = () => {
                   </select>
                 )}
 
-                {/* Price Range Dropdown */}
                 <select
                   value={priceFilter}
                   onChange={(e) => setPriceFilter(e.target.value as PriceFilterType)}
@@ -496,7 +472,6 @@ export const OrdersPage: React.FC = () => {
                   <option value='OVER_500K'>Trên 500.000 đ</option>
                 </select>
 
-                {/* Sort Dropdown */}
                 <div className='flex items-center gap-1 ml-auto'>
                   <ArrowUpDown size={13} className='text-zinc-400 flex-shrink-0 hidden sm:block' />
                   <select
@@ -517,7 +492,6 @@ export const OrdersPage: React.FC = () => {
                   </select>
                 </div>
 
-                {/* Reset Button */}
                 {isFiltered && (
                   <button
                     type='button'
@@ -533,7 +507,6 @@ export const OrdersPage: React.FC = () => {
             </div>
           )}
 
-          {/* Compact Active Filter Chips Summary (when panel is collapsed but filters are applied) */}
           {!showFilters && activeFilterCount > 0 && (
             <div className='flex items-center gap-1.5 flex-wrap text-xs px-1 animate-in fade-in'>
               <span className='opacity-60 text-[11px] font-medium'>Đang lọc:</span>
@@ -581,9 +554,7 @@ export const OrdersPage: React.FC = () => {
         </div>
       )}
 
-      {/* Main Orders Display Area */}
       {orders.length === 0 ? (
-        /* Empty State */
         <div
           className={`py-16 px-4 rounded-2xl border backdrop-blur-2xl text-center space-y-3 ${
             isDark ? 'bg-zinc-900/50 border-white/10' : 'bg-white/70 border-white/80 shadow-sm'
@@ -594,9 +565,7 @@ export const OrdersPage: React.FC = () => {
           </div>
           <div className='space-y-1'>
             <h3 className='text-sm font-bold'>Chưa có đơn hàng nào</h3>
-            <p className='text-xs opacity-60 max-w-sm mx-auto'>
-              Bấm vào nút bên dưới để tạo đơn in 3D đầu tiên.
-            </p>
+            <p className='text-xs opacity-60 max-w-sm mx-auto'>Bấm vào nút bên dưới để tạo đơn in 3D đầu tiên.</p>
           </div>
           <div className='pt-2'>
             <button
@@ -608,7 +577,6 @@ export const OrdersPage: React.FC = () => {
           </div>
         </div>
       ) : displayedOrders.length === 0 ? (
-        /* Empty Search / Filter Results */
         <div
           className={`py-14 px-4 rounded-2xl border backdrop-blur-2xl text-center space-y-3 ${
             isDark ? 'bg-zinc-900/50 border-white/10' : 'bg-white/70 border-white/80 shadow-sm'
@@ -635,7 +603,6 @@ export const OrdersPage: React.FC = () => {
           </div>
         </div>
       ) : viewMode === 'grid' ? (
-        /* MODE 1: Grid / Card View */
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4'>
           {displayedOrders.map((order: Order) => {
             const mats =
@@ -655,17 +622,14 @@ export const OrdersPage: React.FC = () => {
                     : 'bg-white/75 border-white/80 text-zinc-900 shadow-orange-500/5 hover:border-orange-300 hover:bg-white/95 hover:shadow-orange-500/15'
                 }`}
               >
-                {/* Corner ambient glow */}
                 <div
                   className='absolute top-0 right-0 w-24 h-24 rounded-bl-full pointer-events-none opacity-15 group-hover:opacity-30 transition-opacity'
                   style={{ backgroundColor: firstHex || '#f97316' }}
                 />
 
                 <div>
-                  {/* Top Bar: Color Swatch Dots + #ID + Status */}
                   <div className='flex items-center justify-between gap-2 mb-2.5'>
                     <div className='flex items-center gap-2'>
-                      {/* Color Dots */}
                       <div className='flex items-center -space-x-1.5 flex-shrink-0'>
                         {hexList.length > 0 ? (
                           hexList.map((hex: string, i: number) => (
@@ -701,7 +665,6 @@ export const OrdersPage: React.FC = () => {
                     {order.itemName}
                   </h3>
 
-                  {/* Materials tags */}
                   <div className='flex flex-wrap gap-1 mb-2.5'>
                     {mats.map((m: any, idx: number) => {
                       const hex = getFilamentColor(m)
@@ -761,7 +724,6 @@ export const OrdersPage: React.FC = () => {
           })}
         </div>
       ) : (
-        /* MODE 2: Table / List View (Desktop & Mobile Optimized with Color Dots) */
         <div
           className={`rounded-2xl sm:rounded-3xl border backdrop-blur-2xl shadow-xl transition-all duration-300 overflow-hidden ${
             isDark
@@ -769,7 +731,6 @@ export const OrdersPage: React.FC = () => {
               : 'bg-white/80 border-white/80 text-zinc-900 shadow-orange-500/5'
           }`}
         >
-          {/* Table Header (Desktop) */}
           <div
             className={`hidden md:grid grid-cols-12 px-6 py-3.5 text-[11px] font-bold uppercase tracking-wider border-b border-inherit/60 opacity-60 bg-black/[0.02] dark:bg-white/[0.02]`}
           >
@@ -793,9 +754,7 @@ export const OrdersPage: React.FC = () => {
                   onClick={() => openOrderModal(order)}
                   className='px-4 sm:px-6 py-3 sm:py-3.5 md:grid md:grid-cols-12 md:items-center hover:bg-orange-500/[0.04] dark:hover:bg-white/[0.04] transition-all cursor-pointer text-xs group'
                 >
-                  {/* Col 1: Color Dots + Item Name + Material & Color Name */}
                   <div className='col-span-5 flex items-center gap-3 min-w-0 pr-2'>
-                    {/* Visual Color Swatch Dots at the Start */}
                     <div className='flex items-center -space-x-2 flex-shrink-0'>
                       {hexList.length > 0 ? (
                         hexList.map((hex: string, i: number) => (
@@ -836,7 +795,6 @@ export const OrdersPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Col 2: Customer Name & Phone */}
                   <div className='col-span-3 text-xs opacity-80 truncate hidden md:block'>
                     <div className='font-semibold truncate text-zinc-800 dark:text-zinc-200 flex items-center gap-1'>
                       <User size={12} className='opacity-50 flex-shrink-0' />
@@ -853,7 +811,6 @@ export const OrdersPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Col 3: Quantity & Price */}
                   <div className='col-span-2 text-right hidden md:block'>
                     <div className='font-black text-xs sm:text-sm text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-500'>
                       {formatCurrency(order.price)}
@@ -861,7 +818,6 @@ export const OrdersPage: React.FC = () => {
                     <div className='text-[10px] opacity-60'>SL: {order.quantity}</div>
                   </div>
 
-                  {/* Col 4: Status Badge & Mobile Summary */}
                   <div className='col-span-2 flex items-center justify-between md:justify-end gap-2 mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-inherit/40'>
                     <div className='md:hidden flex items-center justify-between w-full'>
                       <div className='text-[10px] opacity-70 flex items-center gap-1.5'>

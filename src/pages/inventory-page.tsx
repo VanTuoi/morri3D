@@ -291,7 +291,6 @@ export const InventoryPage: React.FC = () => {
               )}
             </div>
 
-            {/* Toggle Filters Button */}
             <button
               type='button'
               onClick={() => setShowFilters((prev) => !prev)}
@@ -320,14 +319,12 @@ export const InventoryPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Collapsible Filter Panel */}
           {showFilters && (
             <div
               className={`p-3 rounded-2xl border backdrop-blur-2xl shadow-sm space-y-2.5 animate-in fade-in slide-in-from-top-2 duration-200 ${
                 isDark ? 'bg-zinc-900/60 border-white/10' : 'bg-white/80 border-white/80'
               }`}
             >
-              {/* Row 1: Stock Filter Pills */}
               <div className='flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-0.5'>
                 <button
                   type='button'
@@ -378,14 +375,12 @@ export const InventoryPage: React.FC = () => {
                 </button>
               </div>
 
-              {/* Row 2: Secondary Dropdowns (Brand, Type, Sort, Reset) */}
               <div className='flex items-center gap-2 flex-wrap text-xs pt-1 border-t border-inherit/40'>
                 <div className='flex items-center gap-1 text-zinc-500 dark:text-zinc-400 font-semibold flex-shrink-0'>
                   <Filter size={12} />
                   <span>Chi tiết:</span>
                 </div>
 
-                {/* Brand Dropdown */}
                 <select
                   value={brandFilter}
                   onChange={(e) => setBrandFilter(e.target.value)}
@@ -405,7 +400,6 @@ export const InventoryPage: React.FC = () => {
                   ))}
                 </select>
 
-                {/* Type Dropdown */}
                 <select
                   value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value)}
@@ -425,7 +419,6 @@ export const InventoryPage: React.FC = () => {
                   ))}
                 </select>
 
-                {/* Sort Dropdown */}
                 <div className='flex items-center gap-1 ml-auto'>
                   <ArrowUpDown size={13} className='text-zinc-400 flex-shrink-0 hidden sm:block' />
                   <select
@@ -444,7 +437,6 @@ export const InventoryPage: React.FC = () => {
                   </select>
                 </div>
 
-                {/* Reset Button */}
                 {isFiltered && (
                   <button
                     type='button'
@@ -460,7 +452,6 @@ export const InventoryPage: React.FC = () => {
             </div>
           )}
 
-          {/* Compact Active Filter Chips Summary (when panel is collapsed but filters are applied) */}
           {!showFilters && activeFilterCount > 0 && (
             <div className='flex items-center gap-1.5 flex-wrap text-xs px-1 animate-in fade-in'>
               <span className='opacity-60 text-[11px] font-medium'>Đang lọc:</span>
@@ -500,9 +491,7 @@ export const InventoryPage: React.FC = () => {
         </div>
       )}
 
-      {/* Main Content Area */}
       {filaments.length === 0 ? (
-        /* Empty Inventory */
         <div
           className={`rounded-2xl sm:rounded-3xl border backdrop-blur-2xl shadow-xl p-12 text-center ${
             isDark ? 'bg-zinc-900/60 border-white/10 text-zinc-100' : 'bg-white/80 border-white/80 text-zinc-900'
@@ -524,7 +513,6 @@ export const InventoryPage: React.FC = () => {
           </button>
         </div>
       ) : displayedFilaments.length === 0 ? (
-        /* Empty Search/Filter Results */
         <div
           className={`rounded-2xl sm:rounded-3xl border backdrop-blur-2xl shadow-xl p-10 text-center ${
             isDark ? 'bg-zinc-900/60 border-white/10 text-zinc-100' : 'bg-white/80 border-white/80 text-zinc-900'
@@ -547,7 +535,6 @@ export const InventoryPage: React.FC = () => {
           </button>
         </div>
       ) : viewMode === 'grid' ? (
-        /* MODE 1: Grid Cards View */
         <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4.5'>
           {displayedFilaments.map((item: Filament) => {
             const currentWeight = item.weight ?? (item.percentage !== undefined ? item.percentage * 10 : 1000)
@@ -632,7 +619,6 @@ export const InventoryPage: React.FC = () => {
           })}
         </div>
       ) : (
-        /* MODE 2: Table List View */
         <div
           className={`rounded-2xl sm:rounded-3xl border backdrop-blur-2xl shadow-xl transition-all duration-300 overflow-hidden ${
             isDark

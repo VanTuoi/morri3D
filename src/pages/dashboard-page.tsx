@@ -4,13 +4,13 @@ import { Clock, Printer, Box, ArrowRight, DollarSign, Plus, Layers } from 'lucid
 import type { Order, Filament } from '~/types'
 import { STATUSES, formatCurrency, formatDate } from '~/types'
 import { StatusBadge } from '~/components/ui/status-badge'
+import { PromoBanner } from '~/components/ui'
 
 export const DashboardPage: React.FC = () => {
   const { stats, orders = [], filaments = [], theme, openOrderModal } = useOutletContext<any>()
   const navigate = useNavigate()
   const isDark = theme === 'dark'
 
-  // Helper to find filament color hex
   const getFilamentColor = (m?: { inventoryId?: string; type?: string; color?: string }) => {
     if (!m) return ''
     const fil = filaments.find(
@@ -185,7 +185,6 @@ export const DashboardPage: React.FC = () => {
                   className='px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between gap-3 hover:bg-orange-500/[0.04] dark:hover:bg-white/[0.04] transition-all cursor-pointer text-xs group'
                 >
                   <div className='flex items-center gap-3 min-w-0'>
-                    {/* Visual Filament Color Swatch Dots at the Start */}
                     <div className='flex items-center -space-x-2 flex-shrink-0'>
                       {hexList.length > 0 ? (
                         hexList.map((hex: string, i: number) => (
@@ -240,6 +239,8 @@ export const DashboardPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      <PromoBanner theme={theme} />
     </div>
   )
 }

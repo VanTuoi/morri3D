@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react'
 import { NavLink } from 'react-router-dom'
 import { LayoutDashboard, Package, Layers, PlusCircle, Settings, RefreshCw, Sparkles } from 'lucide-react'
 import gsap from 'gsap'
+import { PromoBanner } from '~/components/ui'
 import type { UserInfo } from '~/types'
 
 interface SidebarProps {
@@ -236,7 +237,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </div>
 
-      <div className={`p-3 border-t relative z-10 ${isDark ? 'border-white/10' : 'border-white/15'}`}>
+      <div className={`p-3 border-t relative z-10 space-y-2.5 ${isDark ? 'border-white/10' : 'border-white/15'}`}>
+        <PromoBanner variant='compact' theme={theme} />
+
         <div
           className={`p-2.5 rounded-2xl border backdrop-blur-2xl transition-all duration-200 shadow-lg ${
             isDark

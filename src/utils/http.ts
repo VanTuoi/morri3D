@@ -74,11 +74,6 @@ privateApi.interceptors.response.use(
   }
 )
 
-/**
- *
- * @param type
- * @returns
- */
 export function apiSelector(type: 'public' | 'private' = 'public') {
   return type === 'public' ? publicApi : privateApi
 }

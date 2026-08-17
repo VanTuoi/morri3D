@@ -48,14 +48,12 @@ export const FilamentSelect: React.FC<FilamentSelectProps> = ({
     })
   }, [filaments, search])
 
-  // Format hex code nicely (ensure # prefix and uppercase)
   const formatHex = (hex?: string) => {
     if (!hex) return ''
     const clean = hex.trim()
     return clean.startsWith('#') ? clean.toUpperCase() : `#${clean.toUpperCase()}`
   }
 
-  // Handle click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -66,7 +64,6 @@ export const FilamentSelect: React.FC<FilamentSelectProps> = ({
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside)
       document.addEventListener('touchstart', handleClickOutside)
-      // Focus search input when dropdown opens
       setTimeout(() => {
         searchInputRef.current?.focus()
       }, 50)
@@ -78,7 +75,6 @@ export const FilamentSelect: React.FC<FilamentSelectProps> = ({
     }
   }, [isOpen])
 
-  // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       setIsOpen(false)
@@ -87,7 +83,6 @@ export const FilamentSelect: React.FC<FilamentSelectProps> = ({
 
   return (
     <div ref={containerRef} className={cn('relative w-full text-left', className)} onKeyDown={handleKeyDown}>
-      {/* Trigger Button */}
       <button
         type='button'
         disabled={disabled}
@@ -105,20 +100,17 @@ export const FilamentSelect: React.FC<FilamentSelectProps> = ({
         <div className='flex items-center gap-2.5 min-w-0 flex-1'>
           {selectedFilament ? (
             <>
-              {/* Color Swatch */}
               <span
                 className='w-5 h-5 rounded-full ring-1 ring-black/20 dark:ring-white/25 shadow-xs flex-shrink-0 relative'
                 style={{ backgroundColor: selectedFilament.colorHex || '#ccc' }}
               />
 
-              {/* Hex Code Badge */}
               {selectedFilament.colorHex && (
                 <span className='font-mono text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-zinc-100 dark:bg-white/10 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-white/10 flex-shrink-0'>
                   {formatHex(selectedFilament.colorHex)}
                 </span>
               )}
 
-              {/* Brand & Type & Color Name */}
               <div className='flex items-center gap-1.5 min-w-0 flex-1 truncate'>
                 <span className='font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 truncate'>
                   {selectedFilament.brand} {selectedFilament.type}
@@ -153,7 +145,6 @@ export const FilamentSelect: React.FC<FilamentSelectProps> = ({
         </div>
       </button>
 
-      {/* Dropdown Menu */}
       {isOpen && (
         <div
           className={cn(
@@ -161,7 +152,6 @@ export const FilamentSelect: React.FC<FilamentSelectProps> = ({
             'bg-white/95 dark:bg-zinc-900/95 border-zinc-200 dark:border-white/15 text-zinc-900 dark:text-zinc-100'
           )}
         >
-          {/* Quick Search Bar (if list is long) */}
           {filaments.length > 3 && (
             <div className='p-2.5 border-b border-zinc-200/80 dark:border-white/10 bg-zinc-50/50 dark:bg-zinc-800/40'>
               <div className='relative'>
@@ -178,7 +168,6 @@ export const FilamentSelect: React.FC<FilamentSelectProps> = ({
             </div>
           )}
 
-          {/* Options List */}
           <div className='max-h-64 sm:max-h-72 overflow-y-auto p-1.5 space-y-1'>
             {filaments.length === 0 ? (
               <div className='p-4 text-center text-xs opacity-60 flex flex-col items-center gap-1.5'>
@@ -204,20 +193,17 @@ export const FilamentSelect: React.FC<FilamentSelectProps> = ({
                     )}
                   >
                     <div className='flex items-center gap-2.5 min-w-0 flex-1'>
-                      {/* Color Swatch */}
                       <span
                         className='w-5 h-5 rounded-full ring-1 ring-black/20 dark:ring-white/25 shadow-xs flex-shrink-0'
                         style={{ backgroundColor: fil.colorHex || '#ccc' }}
                       />
 
-                      {/* Hex Code Badge */}
                       {fil.colorHex && (
                         <span className='font-mono text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-zinc-100 dark:bg-white/10 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-white/10 flex-shrink-0 min-w-[62px] text-center'>
                           {formatHex(fil.colorHex)}
                         </span>
                       )}
 
-                      {/* Filament Info */}
                       <div className='flex flex-col min-w-0 flex-1'>
                         <span className='font-bold text-xs sm:text-sm truncate text-zinc-900 dark:text-zinc-100'>
                           {fil.brand} {fil.type}

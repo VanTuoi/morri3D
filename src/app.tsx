@@ -5,6 +5,7 @@ import useRouteElements from '~/use-route-elements'
 
 const App = () => {
   const m = useManagerData()
+  const routeElements = useRouteElements(m)
 
   if (!m.user) {
     return (
@@ -20,9 +21,6 @@ const App = () => {
       </>
     )
   }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const routeElements = useRouteElements(m)
 
   return (
     <div className='w-full max-w-full overflow-x-hidden min-h-screen'>

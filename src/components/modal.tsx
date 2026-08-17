@@ -223,7 +223,6 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
         <div className='p-4 sm:p-6 flex-1 overflow-y-auto space-y-4 sm:space-y-5 z-10 scrollbar-hide'>
           {isEditing ? (
-            /* ===== EDIT FORM MODE ===== */
             <div className='space-y-3.5 sm:space-y-4 text-xs'>
               <div>
                 <label className='block font-semibold opacity-70 mb-1'>Tên mẫu in 3D *</label>
@@ -403,7 +402,6 @@ export const OrderModal: React.FC<OrderModalProps> = ({
               </div>
             </div>
           ) : (
-            /* ===== VIEW MODE ===== */
             <>
               <div>
                 <label className='text-[11px] text-orange-500 font-bold uppercase tracking-wider block mb-1'>
@@ -417,7 +415,6 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 </div>
               </div>
 
-              {/* ===== DEDICATED MATERIAL & COLOR PREVIEW BOX ===== */}
               <div className='bg-black/5 dark:bg-white/5 p-4 rounded-2xl border border-inherit space-y-3'>
                 <div className='flex items-center justify-between'>
                   <h4 className='text-xs font-bold uppercase tracking-wider opacity-60 flex items-center gap-1.5'>
@@ -425,7 +422,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                     <span>Vật liệu & Màu nhựa in 3D</span>
                   </h4>
                   <span className='text-[10px] font-mono opacity-60 font-semibold'>
-                    {(order.materials && order.materials.length > 0 ? order.materials.length : 1)} cuộn nhựa
+                    {order.materials && order.materials.length > 0 ? order.materials.length : 1} cuộn nhựa
                   </span>
                 </div>
 
@@ -466,7 +463,6 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                           />
                         )}
 
-                        {/* Color Swatch Circle */}
                         <div className='relative flex-shrink-0'>
                           <div
                             className='w-8 h-8 rounded-full border-2 border-white dark:border-zinc-700 shadow-md flex items-center justify-center'
@@ -474,7 +470,6 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                           />
                         </div>
 
-                        {/* Info details */}
                         <div className='min-w-0 flex-1 z-10'>
                           <div className='flex items-center gap-1.5 flex-wrap'>
                             <span className='font-black text-xs truncate'>{m.type || fil?.type || 'PLA'}</span>

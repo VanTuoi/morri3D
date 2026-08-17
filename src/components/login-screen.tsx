@@ -62,7 +62,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         })
       }
 
-      // GSAP Floating Aurora Orbs
       if (orb1Ref.current) {
         gsap.to(orb1Ref.current, {
           x: 40,
