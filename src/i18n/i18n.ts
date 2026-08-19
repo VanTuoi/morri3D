@@ -4,30 +4,30 @@ import HOME_EN from '~/locales/en/home.json'
 import HOME_VI from '~/locales/vi/home.json'
 
 export const locales = {
-  en: 'English',
-  vi: 'Tiếng Việt'
+    en: 'English',
+    vi: 'Tiếng Việt'
 } as const
 
 export const resources = {
-  en: {
-    home: HOME_EN
-  },
-  vi: {
-    home: HOME_VI
-  }
+    en: {
+        home: HOME_EN
+    },
+    vi: {
+        home: HOME_VI
+    }
 } as const
 
 export const defaultNS = 'home'
 
 i18n.use(initReactI18next).init({
-  resources,
-  lng: 'vi',
-  ns: ['home'],
-  fallbackLng: 'vi',
-  defaultNS,
-  interpolation: {
-    escapeValue: false
-  }
+    resources,
+    lng: 'vi',
+    ns: ['home'],
+    fallbackLng: 'vi',
+    defaultNS,
+    interpolation: {
+        escapeValue: false
+    }
 })
 
 export default i18n

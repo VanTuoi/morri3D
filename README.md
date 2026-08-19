@@ -1,154 +1,96 @@
-# Dự án Vite với Tailwind CSS
+# Morri 3D — Hệ Thống Quản Lý Đơn Hàng & Kho Nhựa In 3D
 
-Dự án frontend được xây dựng bằng Vite, React, TypeScript và Tailwind CSS. Dự án tích hợp mock API sử dụng `axios-mock-adapter` để mô phỏng tương tác với backend, bao gồm xác thực, danh mục và khóa học.
+Hệ thống frontend quản lý xưởng in 3D hiện đại, tối ưu cho việc theo dõi đơn hàng, quản lý kho cuộn nhựa (filament), báo cáo tài chính và đồng bộ trực tiếp với Google Sheets qua Google Apps Script.
 
-## Mục lục
+---
 
-- [Yêu cầu](#yêu-cầu)
-- [Cài đặt](#cài-đặt)
-- [Chạy dự án](#chạy-dự-án)
-- [Cấu hình Mock API](#cấu-hình-mock-api)
-- [Tài khoản đăng nhập mặc định](#tài-khoản-đăng-nhập-mặc-định)
-- [Scripts](#scripts)
-- [Thư viện phụ thuộc](#thư-viện-phụ-thuộc)
-- [Cấu trúc dự án](#cấu-trúc-dự-án)
-- [Biến môi trường](#biến-môi-trường)
+## ✨ Tính Năng Chính
 
-## Yêu cầu
+- 📦 **Quản lý đơn hàng (Orders)**: Tạo, cập nhật trạng thái đơn (chờ duyệt, đang in, hoàn tất, giao hàng), theo dõi thông số in và giá trị đơn.
+- 🧵 **Quản lý kho nhựa (Inventory)**: Quản lý chi tiết từng cuộn nhựa (chất liệu PLA/PETG/ABS/TPU, hãng, màu sắc, khối lượng còn lại, giá vốn).
+- 📊 **Dashboard & Báo cáo**: Tổng quan doanh thu, chi phí vật liệu, thời gian in và tỷ suất lợi nhuận.
+- ⚡ **Đồng bộ Google Sheets**: Sử dụng Google Apps Script (GAS) làm serverless backend
+- 🔐 **Xác thực Google OAuth**: Đăng nhập bảo mật bằng tài khoản Google, phân quyền theo email.
+- 🎨 **Giao diện cao cấp**: Hỗ trợ Dark/Light mode, hiệu ứng kính lỏng (Liquid Glass), hoạt ảnh GSAP và tương thích hoàn toàn trên thiết bị di động.
 
-Cần cài đặt các phần mềm sau:
+---
 
-- **Node.js** (khuyến nghị v18 trở lên)
-- Trình duyệt web hiện đại để phát triển và kiểm thử
+## 🛠️ Công Nghệ Sử Dụng
 
-## Cài đặt
+- **Frontend**: [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Vite](https://vitejs.dev/)
+- **Styling & UI**: [Tailwind CSS v4](https://tailwindcss.com/), [Radix UI](https://www.radix-ui.com/), [Lucide React](https://lucide.dev/)
+- **Animation**: [GSAP](https://gsap.com/), [Liquid Glass React](https://github.com/...)
+- **State & Forms**: [TanStack Query](https://tanstack.com/query), [React Hook Form](https://react-hook-form.com/), [Zod](https://zod.dev/)
+- **Backend & Database**: [Google Apps Script (GAS)](https://developers.google.com/apps-script) + Google Sheets
 
-1. **Sao chép và giải nén kho mã nguồn**:
+---
 
-   ```bash
-   cd vite-project-tailwind
-   ```
+## 🚀 Hướng Dẫn Cài Đặt
 
-2. **Cài đặt thư viện phụ thuộc**:
-
-   ```bash
-   npm install
-   ```
-
-3. **Thiết lập biến môi trường**:
-   Tạo file `.env` trong thư mục gốc và thêm nội dung sau:
-   ```bash
-   VITE_BACKEND_URL="http://localhost:8000/api"
-   VITE_USE_MOCK_API="true"
-   ```
-   - `VITE_BACKEND_URL`: URL của API backend (dùng khi `VITE_USE_MOCK_API` là `false`).
-   - `VITE_USE_MOCK_API`: Kích hoạt mock API khi đặt là `true`.
-
-## Chạy dự án
-
-Khởi động server:
+### 1. Cài đặt thư viện
 
 ```bash
+npm install
+```
+
+### 2. Cấu hình biến môi trường
+
+Tạo file `.env` từ mẫu `.env.example`:
+
+```env
+# Google OAuth Client ID
+VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+
+# Google Apps Script Web App URL
+VITE_GAS_URL=https://script.google.com/macros/s/your-deployment-id/exec
+
+# Bỏ qua đăng nhập Google khi dev local (true / false)
+VITE_BYPASS_AUTH=false
+
+# Bật/tắt banner quảng cáo (tùy chọn)
+VITE_ENABLE_ADS=false
+```
+
+### 3. Khởi chạy ứng dụng
+
+```bash
+# Chạy môi trường phát triển (Dev server)
 npm run dev
-```
 
-Server được cấu hình chạy tại `http://localhost:3000`. (Thay đổi tại vite.config.ts)
-
-Xây dựng dự án cho production:
-
-```bash
+# Xây dựng bản production
 npm run build
+
+# Xem thử bản build production
+npm run preview
 ```
 
-## Cấu hình Mock API
+---
 
-Dự án sử dụng `axios-mock-adapter` để mô phỏng các phản hồi từ backend cho xác thực, danh mục và khóa học. Mock API được kích hoạt khi `VITE_USE_MOCK_API` là `true` trong file `.env`.
+## 📁 Cấu Trúc Dự Án
 
-### Tính năng Mock API
-
-- **Xác thực**:
-  - Đăng nhập (`POST /login`): Mô phỏng đăng nhập với tài khoản mặc định.
-  - Đăng ký (`POST /register`): Mô phỏng đăng ký người dùng.
-  - Đăng xuất (`POST /logout`): Mô phỏng đăng xuất.
-- **Danh mục**:
-  - Lấy danh sách danh mục (`GET /categories`): Trả về danh sách danh mục.
-  - Tạo danh mục (`POST /categories`): Thêm danh mục mới.
-  - Cập nhật danh mục (`PUT /categories/:id`): Cập nhật danh mục.
-  - Xóa danh mục (`DELETE /categories/:id`): Xóa danh mục.
-- **Khóa học**:
-  - Lấy danh sách khóa học (`GET /courses`): Trả về danh sách khóa học phân trang, hỗ trợ tìm kiếm và sắp xếp.
-  - Lấy khóa học theo ID (`GET /courses/:id`): Lấy thông tin một khóa học.
-  - Tạo khóa học (`POST /courses`): Thêm khóa học mới.
-  - Cập nhật khóa học (`PUT /courses/:id`): Cập nhật khóa học.
-  - Xóa khóa học (`DELETE /courses/:id`): Xóa khóa học.
-
-### Kích hoạt Mock API
-
-1. Đảm bảo `VITE_USE_MOCK_API="true"` trong file `.env`.
-2. Mock API tự động được cấu hình khi ứng dụng khởi động, sử dụng các adapter trong các file như `auth.ts`, `categories.ts`, `courses.ts`.
-3. Không cần server backend khi sử dụng mock API.
-
-### Tắt Mock API
-
-Để sử dụng backend thật:
-
-1. Đặt `VITE_USE_MOCK_API="false"` trong file `.env`.
-2. Đảm bảo server backend đang chạy tại `VITE_BACKEND_URL` (ví dụ: `http://localhost:8000/api`).
-
-## Tài khoản đăng nhập mặc định
-
-Mock API cung cấp hai tài khoản mặc định để kiểm tra đăng nhập:
-
-- **jone@example.com**: Vai trò `admin`
-- **jone2@example.com**: Vai trò `user`
-
-Sử dụng các email trên với endpoint `POST /login` để kiểm tra. Mock API sẽ trả về token JWT giả lập và thông tin người dùng khi đăng nhập thành công.
-
-## Scripts
-
-Các lệnh npm có sẵn:
-
-- `npm run dev`: Khởi động server phát triển.
-- `npm run build`: Xây dựng dự án cho production.
-- `npm run lint`: Chạy ESLint trên các file TypeScript và cấu hình.
-- `npm run lint:fix`: Chạy ESLint và tự động sửa lỗi.
-- `npm run format`: Kiểm tra định dạng mã với Prettier.
-- `npm run format:fix`: Định dạng lại mã với Prettier.
-
-## Thư viện phụ thuộc
-
-Các thư viện chính:
-
-- **React**: Xây dựng giao diện người dùng.
-- **TypeScript**: JavaScript với kiểm tra kiểu.
-- **Tailwind CSS**: CSS theo kiểu utility-first.
-- **axios** và **axios-mock-adapter**: Gửi yêu cầu HTTP và mock API.
-- **@tanstack/react-query**: Quản lý dữ liệu và trạng thái.
-- **react-router-dom**: Điều hướng phía client.
-- **@radix-ui/\***: Các thành phần giao diện.
-- **zod**: Xác thực schema.
-- **react-hook-form**: Quản lý biểu mẫu.
-- Xem `package.json` để biết danh sách đầy đủ.
-
-## Cấu trúc dự án
-
-```
-vite-project-tailwind/
+```text
+manager-order/
 ├── src/
-│   ├── types/              # Định nghĩa kiểu TypeScript
-│   ├── mocks/              # Cấu hình mock API (auth.ts, categories.ts, courses.ts)
-│   ├── components/         # Các thành phần React tái sử dụng
-│   ├── pages/              # Các thành phần trang
-│   └── ...                 # Các file mã nguồn khác
-├── public/                 # Tài nguyên tĩnh (ví dụ: hình ảnh)
-├── .env                    # Biến môi trường
-├── package.json            # Metadata và phụ thuộc của dự án
-├── vite.config.ts          # Cấu hình Vite
-├── tailwind.config.ts      # Cấu hình Tailwind CSS
-└── README.md               # Tài liệu này
+│   ├── components/       # Các component UI, layout, modal, thanh điều hướng
+│   ├── contexts/         # Context quản lý State toàn cục (Auth, App State...)
+│   ├── hooks/            # Custom hooks
+│   ├── pages/            # Các trang chính: Dashboard, Orders, Inventory, Add...
+│   ├── services/         # Tương tác API và kết nối Google Apps Script
+│   ├── types/            # Khai báo TypeScript types & interfaces
+│   └── utils/            # Tiện ích định dạng tiền tệ, ngày tháng, tính toán
+├── public/               # Tài nguyên tĩnh (logo, favicon, icons)
+├── .env.example          # File mẫu cấu hình môi trường
+├── package.json
+└── vite.config.ts
 ```
 
-## Biến môi trường
+---
 
-- `VITE_BACKEND_URL`: URL của API backend (ví dụ: `http://localhost:8000/api`).
-- `VITE_USE_MOCK_API`: Đặt `true` để dùng mock API, `false` để dùng backend thật.
+## 📜 Các Lệnh Scripts Hỗ Trợ
+
+| Lệnh                 | Mô tả                                                       |
+| :------------------- | :---------------------------------------------------------- |
+| `npm run dev`        | Khởi động Vite dev server trên mạng local                   |
+| `npm run build`      | Kiểm tra kiểu dữ liệu TypeScript và build production bundle |
+| `npm run lint:fix`   | Tự động quét và sửa các lỗi ESLint                          |
+| `npm run format:fix` | Định dạng code chuẩn bằng Prettier                          |
