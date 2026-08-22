@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react'
+import React, { useMemo, useState, useEffect, useCallback } from 'react'
 import { useOutletContext, useNavigate } from 'react-router-dom'
 import {
     ChevronRight,
@@ -13,15 +13,16 @@ import {
     ArrowUpDown,
     RotateCcw,
     Sparkles,
-    SlidersHorizontal
+    SlidersHorizontal,
+    Heart
 } from 'lucide-react'
 import type { Filament } from '~/types'
 
 type StockFilterType = 'ALL' | 'LOW' | 'HALF' | 'FULL'
-type SortByType = 'weight-asc' | 'weight-desc' | 'brand-asc' | 'date-desc'
+type SortByType = 'weight-asc' | 'weight-desc' | 'favorite-first' | 'brand-asc' | 'date-desc'
 
 export const InventoryPage: React.FC = () => {
-    const { filaments = [], theme, openFilamentModal } = useOutletContext<any>()
+    const { filaments = [], theme, openFilamentModal, setFilaments } = useOutletContext<any>()
     const navigate = useNavigate()
     const isDark = theme === 'dark'
 
@@ -39,6 +40,113 @@ export const InventoryPage: React.FC = () => {
     const [brandFilter, setBrandFilter] = useState('ALL')
     const [typeFilter, setTypeFilter] = useState('ALL')
     const [sortBy, setSortBy] = useState<SortByType>('weight-asc')
+    const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
+
+    const [heartParticles, setHeartParticles] = useState<
+        Array<{
+            id: number
+            x: number
+            y: number
+            tx: number
+            ty: number
+            size: number
+            color: string
+            rotate: number
+            scale: number
+            duration: number
+            delay: number
+        }>
+    >([])
+
+    const triggerHeartBurst = useCallback((clickX: number, clickY: number) => {
+        const colors = ['#f43f5e', '#ec4899', '#f472b6', '#fb7185', '#e11d48', '#fda4af', '#ff2a6d', '#ff007f']
+        const newParticles: Array<{
+            id: number
+            x: number
+            y: number
+            tx: number
+            ty: number
+            size: number
+            color: string
+            rotate: number
+            scale: number
+            duration: number
+            delay: number
+        }> = []
+        const now = Date.now()
+
+        for (let i = 0; i < 18; i++) {
+            const angle = (Math.PI * 2 * i) / 18 + (Math.random() - 0.5) * 0.4
+            const distance = 50 + Math.random() * 110
+            const tx = Math.cos(angle) * distance + (Math.random() - 0.5) * 50
+            const ty = -Math.abs(Math.sin(angle) * distance) - (60 + Math.random() * 140)
+
+            newParticles.push({
+                id: now + i,
+                x: clickX,
+                y: clickY,
+                tx,
+                ty,
+                size: Math.floor(15 + Math.random() * 20),
+                color: colors[Math.floor(Math.random() * colors.length)],
+                rotate: (Math.random() - 0.5) * 90,
+                scale: 1 + Math.random() * 0.5,
+                duration: 1.2 + Math.random() * 0.5,
+                delay: Math.random() * 0.08
+            })
+        }
+
+        const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 800
+        const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 600
+        for (let j = 0; j < 10; j++) {
+            const startX = Math.random() * windowWidth
+            const startY = windowHeight * 0.65 + Math.random() * (windowHeight * 0.35)
+            const tx = (Math.random() - 0.5) * 120
+            const ty = -(180 + Math.random() * 280)
+
+            newParticles.push({
+                id: now + 100 + j,
+                x: startX,
+                y: startY,
+                tx,
+                ty,
+                size: Math.floor(20 + Math.random() * 24),
+                color: colors[Math.floor(Math.random() * colors.length)],
+                rotate: (Math.random() - 0.5) * 60,
+                scale: 1.1 + Math.random() * 0.6,
+                duration: 1.5 + Math.random() * 0.6,
+                delay: Math.random() * 0.3
+            })
+        }
+
+        setHeartParticles((prev) => [...prev, ...newParticles])
+
+        setTimeout(() => {
+            setHeartParticles((prev) => prev.filter((p) => !newParticles.some((np) => np.id === p.id)))
+        }, 2400)
+    }, [])
+
+    const toggleFavorite = useCallback(
+        (e: React.MouseEvent, id: string) => {
+            e.stopPropagation()
+            const targetFilament = filaments.find((f: Filament) => f.id === id)
+            const isBecomingFavorite = !targetFilament?.isFavorite
+
+            if (isBecomingFavorite) {
+                const rect = e.currentTarget.getBoundingClientRect()
+                const clickX = e.clientX || rect.left + rect.width / 2
+                const clickY = e.clientY || rect.top + rect.height / 2
+                triggerHeartBurst(clickX, clickY)
+            }
+
+            setFilaments((prev: Filament[]) => prev.map((f) => (f.id === id ? { ...f, isFavorite: !f.isFavorite } : f)))
+        },
+        [filaments, setFilaments, triggerHeartBurst]
+    )
+
+    const favoritesCount = useMemo(() => {
+        return filaments.filter((f: Filament) => f.isFavorite).length
+    }, [filaments])
 
     const totalWeightKg = useMemo(() => {
         const sumGrams = filaments.reduce((acc: number, f: Filament) => {
@@ -85,8 +193,9 @@ export const InventoryPage: React.FC = () => {
         if (brandFilter !== 'ALL') count++
         if (typeFilter !== 'ALL') count++
         if (sortBy !== 'weight-asc') count++
+        if (showFavoritesOnly) count++
         return count
-    }, [stockFilter, brandFilter, typeFilter, sortBy])
+    }, [stockFilter, brandFilter, typeFilter, sortBy, showFavoritesOnly])
 
     const isFiltered = useMemo(() => {
         return searchQuery.trim() !== '' || activeFilterCount > 0
@@ -98,6 +207,7 @@ export const InventoryPage: React.FC = () => {
         setBrandFilter('ALL')
         setTypeFilter('ALL')
         setSortBy('weight-asc')
+        setShowFavoritesOnly(false)
     }
 
     const handleToggleLowStock = () => {
@@ -106,6 +216,10 @@ export const InventoryPage: React.FC = () => {
 
     const displayedFilaments = useMemo(() => {
         let list = [...filaments]
+
+        if (showFavoritesOnly) {
+            list = list.filter((f: Filament) => f.isFavorite)
+        }
 
         if (stockFilter === 'LOW') {
             list = list.filter((f: Filament) => {
@@ -152,6 +266,12 @@ export const InventoryPage: React.FC = () => {
         }
 
         list.sort((a: Filament, b: Filament) => {
+            if (sortBy === 'favorite-first') {
+                const aFav = a.isFavorite ? 0 : 1
+                const bFav = b.isFavorite ? 0 : 1
+                if (aFav !== bFav) return aFav - bFav
+            }
+
             const wA = a.weight ?? (a.percentage !== undefined ? a.percentage * 10 : 1000)
             const wB = b.weight ?? (b.percentage !== undefined ? b.percentage * 10 : 1000)
 
@@ -167,7 +287,7 @@ export const InventoryPage: React.FC = () => {
         })
 
         return list
-    }, [filaments, stockFilter, brandFilter, typeFilter, searchQuery, sortBy])
+    }, [filaments, stockFilter, brandFilter, typeFilter, searchQuery, sortBy, showFavoritesOnly])
 
     const formatHex = (hex?: string) => {
         if (!hex) return ''
@@ -350,6 +470,19 @@ export const InventoryPage: React.FC = () => {
 
                                 <button
                                     type='button'
+                                    onClick={() => setShowFavoritesOnly((prev) => !prev)}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                                        showFavoritesOnly
+                                            ? 'bg-rose-500 text-white shadow-sm shadow-rose-500/30'
+                                            : 'text-rose-400 hover:bg-rose-500/10 hover:text-rose-500'
+                                    }`}
+                                >
+                                    <Heart size={12} className={showFavoritesOnly ? 'fill-white' : ''} />
+                                    <span>Yêu thích ({favoritesCount})</span>
+                                </button>
+
+                                <button
+                                    type='button'
                                     onClick={() => setStockFilter('LOW')}
                                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                                         stockFilter === 'LOW'
@@ -443,6 +576,7 @@ export const InventoryPage: React.FC = () => {
                                     >
                                         <option value='weight-asc'>Khối lượng: Ít nhất trước (Ưu tiên dùng hết)</option>
                                         <option value='weight-desc'>Khối lượng: Nhiều nhất trước</option>
+                                        <option value='favorite-first'>❤️ Mục yêu thích trước</option>
                                         <option value='brand-asc'>Hãng: A → Z</option>
                                         <option value='date-desc'>Mới cập nhật gần đây</option>
                                     </select>
@@ -466,6 +600,12 @@ export const InventoryPage: React.FC = () => {
                     {!showFilters && activeFilterCount > 0 && (
                         <div className='flex items-center gap-1.5 flex-wrap text-xs px-1 animate-in fade-in'>
                             <span className='opacity-60 text-[11px] font-medium'>Đang lọc:</span>
+                            {showFavoritesOnly && (
+                                <span className='px-2 py-0.5 rounded-lg bg-rose-500/15 text-rose-500 border border-rose-500/30 text-[11px] font-bold flex items-center gap-1'>
+                                    <Heart size={10} className='fill-rose-500' />
+                                    Yêu thích
+                                </span>
+                            )}
                             {stockFilter !== 'ALL' && (
                                 <span className='px-2 py-0.5 rounded-lg bg-teal-500/15 text-teal-600 dark:text-teal-300 border border-teal-500/30 text-[11px] font-bold'>
                                     {stockFilter === 'LOW'
@@ -489,9 +629,11 @@ export const InventoryPage: React.FC = () => {
                                 <span className='px-2 py-0.5 rounded-lg bg-black/5 dark:bg-white/10 text-[11px] font-semibold opacity-75'>
                                     {sortBy === 'weight-desc'
                                         ? 'Nhiều nhất'
-                                        : sortBy === 'brand-asc'
-                                          ? 'Hãng A-Z'
-                                          : 'Mới nhất'}
+                                        : sortBy === 'favorite-first'
+                                          ? 'Yêu thích trước'
+                                          : sortBy === 'brand-asc'
+                                            ? 'Hãng A-Z'
+                                            : 'Mới nhất'}
                                 </span>
                             )}
                             <button
@@ -560,15 +702,20 @@ export const InventoryPage: React.FC = () => {
                             item.weight ?? (item.percentage !== undefined ? item.percentage * 10 : 1000)
                         const percentage = Math.min(100, Math.max(0, Math.round((currentWeight / 1000) * 100)))
                         const isLow = currentWeight <= 200
+                        const isFav = !!item.isFavorite
 
                         return (
                             <div
                                 key={item.id}
                                 onClick={() => openFilamentModal(item)}
                                 className={`relative p-3.5 sm:p-4 rounded-2xl border backdrop-blur-2xl transition-all duration-300 overflow-hidden group shadow-lg hover:-translate-y-1 hover:shadow-xl cursor-pointer flex flex-col justify-between ${
-                                    isDark
-                                        ? 'bg-zinc-900/65 border-white/10 text-zinc-100 shadow-black/40 hover:border-teal-500/40 hover:bg-zinc-900/80'
-                                        : 'bg-white/75 border-white/80 text-zinc-900 shadow-teal-500/5 hover:border-teal-300 hover:bg-white/90'
+                                    isFav
+                                        ? isDark
+                                            ? 'bg-zinc-900/65 border-rose-500/30 text-zinc-100 shadow-black/40 hover:border-rose-500/50 hover:bg-zinc-900/80'
+                                            : 'bg-white/75 border-rose-300/60 text-zinc-900 shadow-rose-500/5 hover:border-rose-400 hover:bg-white/90'
+                                        : isDark
+                                          ? 'bg-zinc-900/65 border-white/10 text-zinc-100 shadow-black/40 hover:border-teal-500/40 hover:bg-zinc-900/80'
+                                          : 'bg-white/75 border-white/80 text-zinc-900 shadow-teal-500/5 hover:border-teal-300 hover:bg-white/90'
                                 }`}
                             >
                                 <div
@@ -576,31 +723,48 @@ export const InventoryPage: React.FC = () => {
                                     style={{ backgroundColor: item.colorHex }}
                                 />
 
-                                <div>
-                                    <div className='flex items-center justify-between gap-2 mb-3'>
-                                        <div className='flex items-center gap-1.5'>
-                                            <div
-                                                className='w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-white dark:border-zinc-800 shadow-md group-hover:scale-110 transition-transform'
-                                                style={{ backgroundColor: item.colorHex }}
-                                            />
-                                            {item.colorHex && (
-                                                <span className='font-mono text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 text-zinc-700 dark:text-zinc-300 opacity-75'>
-                                                    {formatHex(item.colorHex)}
-                                                </span>
-                                            )}
-                                        </div>
+                                {/* Nút tim góc trên phải - luôn hiển thị và nổi bật */}
+                                <button
+                                    type='button'
+                                    onClick={(e) => toggleFavorite(e, item.id)}
+                                    title={isFav ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
+                                    className={`absolute top-2.5 right-2.5 z-20 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 ${
+                                        isFav
+                                            ? 'bg-gradient-to-tr from-rose-500 to-pink-500 text-white shadow-md shadow-rose-500/35 hover:brightness-110 scale-105 ring-2 ring-rose-500/20'
+                                            : isDark
+                                              ? 'bg-zinc-800/90 border border-white/10 text-zinc-400 hover:text-rose-400 hover:border-rose-500/40 hover:bg-rose-500/10 shadow-sm'
+                                              : 'bg-white/90 border border-zinc-200 text-zinc-400 hover:text-rose-500 hover:border-rose-300 hover:bg-rose-50 shadow-sm'
+                                    }`}
+                                >
+                                    <Heart size={15} className={`transition-all ${isFav ? 'fill-white' : ''}`} />
+                                </button>
 
-                                        <span className='font-mono font-black text-[10px] sm:text-[11px] px-2 py-0.5 rounded-lg bg-black/5 dark:bg-white/10 text-zinc-700 dark:text-zinc-300'>
-                                            {item.type}
-                                        </span>
+                                <div>
+                                    {/* Hàng trên: Vòng tròn màu & mã hex (tránh bị nút tim đè) */}
+                                    <div className='flex items-center gap-1.5 mb-2.5 pr-9'>
+                                        <div
+                                            className='w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-white dark:border-zinc-800 shadow-md group-hover:scale-110 transition-transform flex-shrink-0'
+                                            style={{ backgroundColor: item.colorHex }}
+                                        />
+                                        {item.colorHex && (
+                                            <span className='font-mono text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 text-zinc-700 dark:text-zinc-300 opacity-75'>
+                                                {formatHex(item.colorHex)}
+                                            </span>
+                                        )}
                                     </div>
 
                                     <div className='mb-3'>
-                                        <div className='font-black text-xs sm:text-sm truncate group-hover:text-teal-500 transition-colors'>
+                                        <div className='font-black text-xs sm:text-sm truncate group-hover:text-teal-500 transition-colors pr-2'>
                                             {item.brand}
                                         </div>
-                                        <div className='text-[10px] sm:text-[11px] opacity-60 truncate mt-0.5'>
-                                            {item.colorName}
+                                        {/* Loại nhựa chuyển sang bên trái, bên dưới tên hãng/nhựa */}
+                                        <div className='flex items-center gap-1.5 flex-wrap mt-1'>
+                                            <span className='font-mono font-black text-[10px] sm:text-[11px] px-2 py-0.5 rounded-lg bg-teal-500/15 text-teal-600 dark:text-teal-300 border border-teal-500/30'>
+                                                {item.type}
+                                            </span>
+                                            <span className='text-[10px] sm:text-[11px] opacity-60 truncate'>
+                                                {item.colorName}
+                                            </span>
                                         </div>
                                         {item.notes && (
                                             <div className='text-[10px] text-teal-400/90 truncate mt-1 italic'>
@@ -676,20 +840,26 @@ export const InventoryPage: React.FC = () => {
                             const percentage = Math.min(100, Math.max(0, Math.round((currentWeight / 1000) * 100)))
                             const isLow = currentWeight <= 200
 
+                            const isFav = !!item.isFavorite
+
                             return (
                                 <div
                                     key={item.id}
                                     onClick={() => openFilamentModal(item)}
-                                    className='px-4 sm:px-6 py-3 sm:py-3.5 md:grid md:grid-cols-12 md:items-center hover:bg-teal-500/[0.04] dark:hover:bg-white/[0.04] transition-all cursor-pointer text-xs group'
+                                    className={`px-4 sm:px-6 py-3 sm:py-3.5 md:grid md:grid-cols-12 md:items-center transition-all cursor-pointer text-xs group ${
+                                        isFav
+                                            ? 'hover:bg-rose-500/[0.04] dark:hover:bg-rose-500/[0.06]'
+                                            : 'hover:bg-teal-500/[0.04] dark:hover:bg-white/[0.04]'
+                                    }`}
                                 >
                                     <div className='col-span-4 flex items-center gap-3'>
-                                        <div className='relative flex-shrink-0 flex items-center gap-1.5'>
+                                        <div className='relative flex-shrink-0'>
                                             <div
                                                 className='w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white/80 dark:border-white/20 shadow-md transition-transform group-hover:scale-110'
                                                 style={{ backgroundColor: item.colorHex }}
                                             />
                                         </div>
-                                        <div>
+                                        <div className='flex-1 min-w-0'>
                                             <div className='font-bold text-xs sm:text-sm group-hover:text-teal-500 transition-colors flex items-center gap-1.5'>
                                                 <span>{item.brand}</span>
                                                 {item.colorHex && (
@@ -712,6 +882,24 @@ export const InventoryPage: React.FC = () => {
                                                 )}
                                             </div>
                                         </div>
+                                        {/* Nút tim cột cuối col-span-4 - luôn hiển thị và nổi bật */}
+                                        <button
+                                            type='button'
+                                            onClick={(e) => toggleFavorite(e, item.id)}
+                                            title={isFav ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
+                                            className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 ${
+                                                isFav
+                                                    ? 'bg-gradient-to-tr from-rose-500 to-pink-500 text-white shadow-md shadow-rose-500/30 scale-105 ring-2 ring-rose-500/20'
+                                                    : isDark
+                                                      ? 'bg-zinc-800/90 border border-white/10 text-zinc-400 hover:text-rose-400 hover:border-rose-500/40 hover:bg-rose-500/10 shadow-sm'
+                                                      : 'bg-white border border-zinc-200 text-zinc-400 hover:text-rose-500 hover:border-rose-300 hover:bg-rose-50 shadow-sm'
+                                            }`}
+                                        >
+                                            <Heart
+                                                size={14}
+                                                className={`transition-all ${isFav ? 'fill-white' : ''}`}
+                                            />
+                                        </button>
                                     </div>
 
                                     <div className='col-span-3 opacity-80 text-xs hidden md:flex items-center gap-1.5'>
@@ -761,6 +949,54 @@ export const InventoryPage: React.FC = () => {
                             )
                         })}
                     </div>
+                </div>
+            )}
+
+            {/* Hiệu ứng trái tim bay bổng toàn màn hình khi yêu thích */}
+            {heartParticles.length > 0 && (
+                <div className='fixed inset-0 pointer-events-none z-[9999] overflow-hidden'>
+                    {heartParticles.map((p) => (
+                        <div
+                            key={p.id}
+                            className='absolute animate-float-heart'
+                            style={{
+                                left: `${p.x}px`,
+                                top: `${p.y}px`,
+                                transform: 'translate(-50%, -50%)',
+                                animation: `burstHeart ${p.duration}s cubic-bezier(0.22, 0.61, 0.36, 1) ${p.delay}s forwards`,
+                                ['--tx' as any]: `${p.tx}px`,
+                                ['--ty' as any]: `${p.ty}px`,
+                                ['--rot' as any]: `${p.rotate}deg`,
+                                ['--sc' as any]: p.scale
+                            }}
+                        >
+                            <Heart
+                                size={p.size}
+                                fill={p.color}
+                                color={p.color}
+                                className='drop-shadow-[0_4px_14px_rgba(244,63,94,0.55)]'
+                            />
+                        </div>
+                    ))}
+                    <style>{`
+            @keyframes burstHeart {
+              0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.2) rotate(0deg);
+              }
+              15% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(var(--sc, 1.25)) rotate(calc(var(--rot) * 0.3));
+              }
+              60% {
+                opacity: 0.95;
+              }
+              100% {
+                opacity: 0;
+                transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0.5) rotate(var(--rot));
+              }
+            }
+          `}</style>
                 </div>
             )}
         </div>

@@ -32,6 +32,7 @@ export interface Filament {
     quantity?: number
     date: string
     notes?: string
+    isFavorite?: boolean
 }
 
 export interface UserInfo {
