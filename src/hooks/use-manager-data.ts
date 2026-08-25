@@ -67,11 +67,7 @@ export function useManagerData() {
 
     const [gasUrl, setGasUrl] = useState(() => {
         const saved = localStorage.getItem('3dManager_gas_url')
-        if (
-            !saved ||
-            saved.includes('AKfycbyy1NEx0A68DSqfdJl11aLJ99CgymKyNBXjQ2P9sEFgYs75qEPvs2Vz9xlBxIDsyWKOwg') ||
-            saved.includes('AKfycbwlmtVsaOE8pHxtS2AyV62AK9GTBowBdwP7TBDXFevpVPkrXl774Ib_ckjNwL4eA0MjRw')
-        ) {
+        if (!saved || saved.includes('script.google.com/macros/s/')) {
             return DEFAULT_GAS_URL
         }
         return saved
@@ -148,7 +144,7 @@ export function useManagerData() {
                     const userEmail = (decoded.email || '').toLowerCase().trim()
                     let validEmails = allowedEmails
 
-                    if (gasUrl && gasUrl.startsWith('http')) {
+                    if (gasUrl) {
                         try {
                             const res = await fetch(`${gasUrl}?action=getAll`, {
                                 method: 'GET',
@@ -218,7 +214,7 @@ export function useManagerData() {
     const fetchFromGoogleSheets = useCallback(
         async (customUrl?: string) => {
             const url = customUrl || gasUrl
-            if (!url || !url.startsWith('http')) return
+            if (!url) return
 
             setSyncStatus('syncing')
             setSyncMessage('Đang tải dữ liệu từ Google Sheet...')
@@ -288,7 +284,7 @@ export function useManagerData() {
 
     const pushToGoogleSheets = useCallback(
         async (ordersData: Order[], filamentsData: Filament[]) => {
-            if (!gasUrl || !gasUrl.startsWith('http')) return
+            if (!gasUrl) return
 
             if (!isServerLoadedRef.current) {
                 console.warn('[Sync Guard] Bị chặn: Chưa tải dữ liệu từ Google Sheets')
@@ -307,10 +303,9 @@ export function useManagerData() {
             setSyncMessage('Đang lưu lên Google Sheet...')
 
             try {
-                await fetch(gasUrl, {
+                const response = await fetch(gasUrl, {
                     method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         action: 'syncAll',
                         data: {
@@ -319,6 +314,11 @@ export function useManagerData() {
                         }
                     })
                 })
+
+                const res = await response.json().catch(() => ({ success: true }))
+                if (res && res.success === false) {
+                    throw new Error(res.error || 'Lỗi lưu dữ liệu')
+                }
 
                 isUserModifiedRef.current = false
                 setSyncStatus('synced')
