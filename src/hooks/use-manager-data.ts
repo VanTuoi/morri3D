@@ -1,7 +1,48 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { flushSync } from 'react-dom'
+import toast from 'react-hot-toast'
 import type { Order, Filament, UserInfo } from '~/types'
 import { STATUSES, DEFAULT_GAS_URL, DEFAULT_GOOGLE_CLIENT_ID, parseJwt } from '~/types'
+
+function applyMaterialStockChanges(
+    filamentsList: Filament[],
+    materials: { inventoryId?: string; weight?: number }[],
+    multiplier: 1 | -1
+): { updatedFilaments: Filament[]; changedCount: number; totalGrams: number } {
+    let changedCount = 0
+    let totalGrams = 0
+
+    const deltaMap = new Map<string, number>()
+    for (const mat of materials) {
+        if (mat.inventoryId && mat.weight && Number(mat.weight) > 0) {
+            const currentDelta = deltaMap.get(mat.inventoryId) || 0
+            const weightVal = Number(mat.weight)
+            deltaMap.set(mat.inventoryId, currentDelta + weightVal * multiplier)
+            totalGrams += weightVal
+        }
+    }
+
+    if (deltaMap.size === 0) {
+        return { updatedFilaments: filamentsList, changedCount: 0, totalGrams: 0 }
+    }
+
+    const updatedFilaments = filamentsList.map((f) => {
+        if (deltaMap.has(f.id)) {
+            changedCount++
+            const currentWeight = f.weight ?? (f.percentage !== undefined ? f.percentage * 10 : 1000)
+            const delta = deltaMap.get(f.id)!
+            const newWeight = Math.round((currentWeight + delta) * 10) / 10
+            return {
+                ...f,
+                weight: newWeight,
+                percentage: Math.min(100, Math.max(0, Math.round((newWeight / 1000) * 100)))
+            }
+        }
+        return f
+    })
+
+    return { updatedFilaments, changedCount, totalGrams }
+}
 
 const DEV_USER: UserInfo = {
     name: 'Dev Admin',
@@ -67,11 +108,7 @@ export function useManagerData() {
 
     const [gasUrl, setGasUrl] = useState(() => {
         const saved = localStorage.getItem('3dManager_gas_url')
-        if (
-            !saved ||
-            saved.includes('AKfycbyy1NEx0A68DSqfdJl11aLJ99CgymKyNBXjQ2P9sEFgYs75qEPvs2Vz9xlBxIDsyWKOwg') ||
-            saved.includes('AKfycbwlmtVsaOE8pHxtS2AyV62AK9GTBowBdwP7TBDXFevpVPkrXl774Ib_ckjNwL4eA0MjRw')
-        ) {
+        if (!saved || saved.includes('script.google.com/macros/s/')) {
             return DEFAULT_GAS_URL
         }
         return saved
@@ -108,7 +145,7 @@ export function useManagerData() {
         itemName: '',
         quantity: 1,
         price: '',
-        materials: [{ inventoryId: '', type: 'PLA', color: '' }],
+        materials: [{ inventoryId: '', type: 'PLA', color: '', weight: '' as any }],
         notes: ''
     })
 
@@ -148,7 +185,7 @@ export function useManagerData() {
                     const userEmail = (decoded.email || '').toLowerCase().trim()
                     let validEmails = allowedEmails
 
-                    if (gasUrl && gasUrl.startsWith('http')) {
+                    if (gasUrl) {
                         try {
                             const res = await fetch(`${gasUrl}?action=getAll`, {
                                 method: 'GET',
@@ -218,7 +255,7 @@ export function useManagerData() {
     const fetchFromGoogleSheets = useCallback(
         async (customUrl?: string) => {
             const url = customUrl || gasUrl
-            if (!url || !url.startsWith('http')) return
+            if (!url) return
 
             setSyncStatus('syncing')
             setSyncMessage('Đang tải dữ liệu từ Google Sheet...')
@@ -288,7 +325,7 @@ export function useManagerData() {
 
     const pushToGoogleSheets = useCallback(
         async (ordersData: Order[], filamentsData: Filament[]) => {
-            if (!gasUrl || !gasUrl.startsWith('http')) return
+            if (!gasUrl) return
 
             if (!isServerLoadedRef.current) {
                 console.warn('[Sync Guard] Bị chặn: Chưa tải dữ liệu từ Google Sheets')
@@ -307,10 +344,9 @@ export function useManagerData() {
             setSyncMessage('Đang lưu lên Google Sheet...')
 
             try {
-                await fetch(gasUrl, {
+                const response = await fetch(gasUrl, {
                     method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         action: 'syncAll',
                         data: {
@@ -319,6 +355,11 @@ export function useManagerData() {
                         }
                     })
                 })
+
+                const res = await response.json().catch(() => ({ success: true }))
+                if (res && res.success === false) {
+                    throw new Error(res.error || 'Lỗi lưu dữ liệu')
+                }
 
                 isUserModifiedRef.current = false
                 setSyncStatus('synced')
@@ -474,7 +515,7 @@ export function useManagerData() {
             itemName: '',
             quantity: 1,
             price: '',
-            materials: [{ inventoryId: '', type: 'PLA', color: '' }],
+            materials: [{ inventoryId: '', type: 'PLA', color: '', weight: '' as any }],
             notes: ''
         })
         setActiveTab('orders')
@@ -482,6 +523,32 @@ export function useManagerData() {
 
     const handleUpdateStatus = (newStatus: string) => {
         if (!selectedOrder) return
+        const oldStatus = selectedOrder.status
+        if (oldStatus === newStatus) {
+            setIsOrderModalOpen(false)
+            setShowDeleteConfirm(false)
+            return
+        }
+
+        const materials = selectedOrder.materials || []
+
+        // Transition TO Completed: deduct
+        if (oldStatus !== STATUSES.COMPLETED && newStatus === STATUSES.COMPLETED) {
+            const { updatedFilaments, totalGrams } = applyMaterialStockChanges(filaments, materials, -1)
+            setFilaments(updatedFilaments)
+            if (totalGrams > 0) {
+                toast.success(`Đơn hoàn thành: Đã trừ ${totalGrams}g nhựa trong kho!`)
+            }
+        }
+        // Transition FROM Completed: refund
+        else if (oldStatus === STATUSES.COMPLETED && newStatus !== STATUSES.COMPLETED) {
+            const { updatedFilaments, totalGrams } = applyMaterialStockChanges(filaments, materials, 1)
+            setFilaments(updatedFilaments)
+            if (totalGrams > 0) {
+                toast.success(`Đã đổi trạng thái: Đã hoàn lại ${totalGrams}g nhựa vào kho!`)
+            }
+        }
+
         setOrders(orders.map((o) => (o.id === selectedOrder.id ? { ...o, status: newStatus } : o)))
         setSelectedOrder(null)
         setIsOrderModalOpen(false)
@@ -495,12 +562,69 @@ export function useManagerData() {
     }
 
     const handleUpdateOrder = (updatedOrder: Order) => {
+        const oldOrder = selectedOrder || orders.find((o) => o.id === updatedOrder.id)
+        if (oldOrder) {
+            const oldStatus = oldOrder.status
+            const newStatus = updatedOrder.status
+
+            if (oldStatus !== STATUSES.COMPLETED && newStatus === STATUSES.COMPLETED) {
+                const { updatedFilaments, totalGrams } = applyMaterialStockChanges(
+                    filaments,
+                    updatedOrder.materials || [],
+                    -1
+                )
+                setFilaments(updatedFilaments)
+                if (totalGrams > 0) {
+                    toast.success(`Đơn hoàn thành: Đã trừ ${totalGrams}g nhựa trong kho!`)
+                }
+            } else if (oldStatus === STATUSES.COMPLETED && newStatus !== STATUSES.COMPLETED) {
+                const { updatedFilaments, totalGrams } = applyMaterialStockChanges(
+                    filaments,
+                    oldOrder.materials || [],
+                    1
+                )
+                setFilaments(updatedFilaments)
+                if (totalGrams > 0) {
+                    toast.success(`Đã đổi trạng thái: Đã hoàn lại ${totalGrams}g nhựa vào kho!`)
+                }
+            } else if (oldStatus === STATUSES.COMPLETED && newStatus === STATUSES.COMPLETED) {
+                // Both are completed: refund old, then deduct new
+                const refunded = applyMaterialStockChanges(filaments, oldOrder.materials || [], 1)
+                const finalAdjusted = applyMaterialStockChanges(
+                    refunded.updatedFilaments,
+                    updatedOrder.materials || [],
+                    -1
+                )
+                setFilaments(finalAdjusted.updatedFilaments)
+                const diff = refunded.totalGrams - finalAdjusted.totalGrams
+                if (diff !== 0) {
+                    toast.success(
+                        diff > 0
+                            ? `Đã cập nhật đơn & hoàn lại ${diff}g nhựa vào kho!`
+                            : `Đã cập nhật đơn & trừ thêm ${Math.abs(diff)}g nhựa trong kho!`
+                    )
+                }
+            }
+        }
+
         setOrders(orders.map((o) => (o.id === updatedOrder.id ? updatedOrder : o)))
         setSelectedOrder(updatedOrder)
         setIsOrderModalOpen(false)
     }
 
     const handleDeleteOrder = (id: string) => {
+        const orderToDelete = orders.find((o) => o.id === id)
+        if (orderToDelete && orderToDelete.status === STATUSES.COMPLETED) {
+            const { updatedFilaments, totalGrams } = applyMaterialStockChanges(
+                filaments,
+                orderToDelete.materials || [],
+                1
+            )
+            setFilaments(updatedFilaments)
+            if (totalGrams > 0) {
+                toast.success(`Đã hoàn lại ${totalGrams}g nhựa vào kho!`)
+            }
+        }
         setOrders(orders.filter((o) => o.id !== id))
         setIsOrderModalOpen(false)
         setSelectedOrder(null)
@@ -510,13 +634,13 @@ export function useManagerData() {
     const handleAddOrderMaterial = () => {
         setNewOrder({
             ...newOrder,
-            materials: [...newOrder.materials, { inventoryId: '', type: '', color: '' }]
+            materials: [...newOrder.materials, { inventoryId: '', type: '', color: '', weight: '' as any }]
         })
     }
 
-    const handleUpdateOrderMaterial = (index: number, field: string, value: string) => {
+    const handleUpdateOrderMaterial = (index: number, field: string, value: any) => {
         const updatedMaterials = [...newOrder.materials]
-        ;(updatedMaterials[index] as any)[field] = value
+        ;(updatedMaterials[index] as any)[field] = field === 'weight' ? (value === '' ? '' : Number(value)) : value
 
         if (field === 'inventoryId' && value) {
             const selectedFil = filaments.find((f) => f.id === value)

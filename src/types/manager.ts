@@ -2,6 +2,7 @@ export interface OrderMaterial {
     inventoryId?: string
     type: string
     color: string
+    weight?: number
 }
 
 export interface Order {
@@ -69,11 +70,8 @@ export const BASIC_COLORS = [
     { name: 'Đen', hex: '#000000' }
 ]
 
-export const DEFAULT_GAS_URL =
-    import.meta.env.VITE_GAS_URL ||
-    'https://script.google.com/macros/s/AKfycbzheMtGxwI6WMysOJNFyfNCkjowSSNz1urWAyI78fOz1_MPHWs3fNPyqifEQgVLte0mHA/exec'
-export const DEFAULT_GOOGLE_CLIENT_ID =
-    import.meta.env.VITE_GOOGLE_CLIENT_ID || '578947535957-4m0bb7ivjoqag82ehh70scehvodsue79.apps.googleusercontent.com'
+export const DEFAULT_GAS_URL = '/api/data'
+export const DEFAULT_GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 
 export const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount || 0)

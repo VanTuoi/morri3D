@@ -1,4 +1,31 @@
+/**
+ * GOOGLE APPS SCRIPT BACKEND CHO MORRI 3D MANAGER
+ * 
+ * Hướng dẫn cấu hình Secret Key:
+ * 1. Nếu muốn bảo vệ API bằng mã bí mật (chống gọi trái phép khi lộ link), hãy đặt chuỗi bất kỳ vào biến SECRET_API_KEY bên dưới.
+ * 2. Nếu để trống "" (mặc định), script sẽ cho phép mọi request từ Vercel Serverless Function gọi vào.
+ */
+
+var SECRET_API_KEY = "";
+
+function isValidRequest(e, bodyObj) {
+  if (!SECRET_API_KEY || SECRET_API_KEY.trim() === "") {
+    return true; // Không bật xác thực Secret Key
+  }
+  
+  var keyFromQuery = (e && e.parameter && e.parameter.apiKey) ? e.parameter.apiKey : "";
+  var keyFromBody = (bodyObj && bodyObj.apiKey) ? bodyObj.apiKey : "";
+  
+  return keyFromQuery === SECRET_API_KEY || keyFromBody === SECRET_API_KEY;
+}
+
 function doGet(e) {
+  if (!isValidRequest(e, null)) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ success: false, error: 'Unauthorized: Sai mã Secret API Key' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : 'getAll';
   var ss = SpreadsheetApp.getActiveSpreadsheet();
 
@@ -48,6 +75,13 @@ function doGet(e) {
 function doPost(e) {
   try {
     var contents = JSON.parse(e.postData.contents);
+
+    if (!isValidRequest(e, contents)) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, error: 'Unauthorized: Sai mã Secret API Key' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     var action = contents.action;
     var ss = SpreadsheetApp.getActiveSpreadsheet();
 
