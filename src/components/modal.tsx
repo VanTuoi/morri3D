@@ -14,7 +14,8 @@ import {
     User,
     Phone,
     MapPin,
-    FileText
+    FileText,
+    AlertTriangle
 } from 'lucide-react'
 import type { Order, OrderMaterial, Filament, UserInfo } from '~/types'
 import { STATUSES, formatCurrency, formatDateTime } from '~/types'
@@ -71,10 +72,13 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         setFormData((prev) => (prev ? { ...prev, [field]: value } : prev))
     }
 
-    const handleMaterialChange = (index: number, field: keyof OrderMaterial, value: string) => {
+    const handleMaterialChange = (index: number, field: keyof OrderMaterial, value: any) => {
         if (!formData) return
         const updated = [...(formData.materials || [])]
-        updated[index] = { ...updated[index], [field]: value }
+        updated[index] = {
+            ...updated[index],
+            [field]: field === 'weight' ? (value === '' ? '' : Number(value)) : value
+        }
 
         if (field === 'inventoryId' && value) {
             const fil = filaments.find((f) => f.id === value)
@@ -91,7 +95,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             prev
                 ? {
                       ...prev,
-                      materials: [...(prev.materials || []), { inventoryId: '', type: '', color: '' }]
+                      materials: [...(prev.materials || []), { inventoryId: '', type: '', color: '', weight: 0 }]
                   }
                 : prev
         )
@@ -331,35 +335,134 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                                     </button>
                                 </div>
 
-                                {(formData.materials || []).map((mat, idx) => (
-                                    <div
-                                        key={idx}
-                                        className='p-3 rounded-2xl border bg-black/[0.02] dark:bg-white/[0.02] border-zinc-200/80 dark:border-white/10 space-y-2.5 transition-all'
-                                    >
-                                        <div className='flex items-center justify-between gap-2'>
-                                            <span className='text-xs font-bold text-zinc-600 dark:text-zinc-400'>
-                                                Cuộn nhựa {(formData.materials || []).length > 1 ? `#${idx + 1}` : ''}
-                                            </span>
-                                            {(formData.materials || []).length > 1 && (
-                                                <button
-                                                    type='button'
-                                                    onClick={() => handleRemoveMaterial(idx)}
-                                                    className='px-2 py-1 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 rounded-lg transition-colors flex items-center gap-1 cursor-pointer font-medium'
-                                                >
-                                                    <X size={13} />
-                                                    <span>Xóa</span>
-                                                </button>
+                                {(formData.materials || []).map((mat, idx) => {
+                                    const selectedFil = filaments.find((f) => f.id === mat.inventoryId)
+                                    const availableWeight = selectedFil
+                                        ? (selectedFil.weight ??
+                                          (selectedFil.percentage !== undefined ? selectedFil.percentage * 10 : 1000))
+                                        : 0
+                                    const enteredWeight = Number(mat.weight || 0)
+                                    const isExceeded =
+                                        !!selectedFil && enteredWeight > 0 && enteredWeight > availableWeight
+
+                                    return (
+                                        <div
+                                            key={idx}
+                                            className={`p-3 rounded-2xl border transition-all ${
+                                                isExceeded
+                                                    ? 'border-amber-500/50 bg-amber-500/[0.03]'
+                                                    : 'bg-black/[0.02] dark:bg-white/[0.02] border-zinc-200/80 dark:border-white/10'
+                                            } space-y-2.5`}
+                                        >
+                                            <div className='flex items-center justify-between gap-2'>
+                                                <span className='text-xs font-bold text-zinc-600 dark:text-zinc-400'>
+                                                    Cuộn nhựa{' '}
+                                                    {(formData.materials || []).length > 1 ? `#${idx + 1}` : ''}
+                                                </span>
+                                                {(formData.materials || []).length > 1 && (
+                                                    <button
+                                                        type='button'
+                                                        onClick={() => handleRemoveMaterial(idx)}
+                                                        className='px-2 py-1 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 rounded-lg transition-colors flex items-center gap-1 cursor-pointer font-medium'
+                                                    >
+                                                        <X size={13} />
+                                                        <span>Xóa</span>
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            <FilamentSelect
+                                                value={mat.inventoryId || ''}
+                                                filaments={filaments}
+                                                placeholder='-- Chọn cuộn nhựa từ kho --'
+                                                onChange={(val) => handleMaterialChange(idx, 'inventoryId', val)}
+                                            />
+
+                                            {/* Ô nhập số gam nhựa sử dụng & hiển thị lượng tồn kho đối xứng đều nhau */}
+                                            <div className='grid grid-cols-2 gap-2.5 pt-1'>
+                                                <div>
+                                                    <label className='block text-[11px] font-semibold opacity-70 mb-1'>
+                                                        Số gam nhựa dùng (g)
+                                                    </label>
+                                                    <div className='relative'>
+                                                        <input
+                                                            type='number'
+                                                            min='0'
+                                                            step='any'
+                                                            value={
+                                                                mat.weight !== undefined && mat.weight !== null
+                                                                    ? mat.weight
+                                                                    : ''
+                                                            }
+                                                            onChange={(e) =>
+                                                                handleMaterialChange(idx, 'weight', e.target.value)
+                                                            }
+                                                            placeholder=''
+                                                            className={`w-full h-10 px-3 pr-8 rounded-xl border text-xs font-bold outline-none transition-all ${
+                                                                isExceeded
+                                                                    ? 'border-amber-500/70 focus:border-amber-500'
+                                                                    : isDark
+                                                                      ? 'bg-zinc-800 border-white/10 text-zinc-100 focus:border-orange-500'
+                                                                      : 'bg-white border-zinc-200 text-zinc-900 focus:border-orange-500'
+                                                            }`}
+                                                        />
+                                                        <span className='absolute right-3 top-1/2 -translate-y-1/2 text-xs opacity-50 font-bold pointer-events-none'>
+                                                            g
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label className='block text-[11px] font-semibold opacity-70 mb-1'>
+                                                        Lượng nhựa trong kho
+                                                    </label>
+                                                    <div
+                                                        className={`w-full h-10 px-3 rounded-xl border flex items-center justify-between text-xs ${
+                                                            isDark
+                                                                ? 'bg-zinc-800/60 border-white/10 text-zinc-100'
+                                                                : 'bg-zinc-100/70 border-zinc-200 text-zinc-900'
+                                                        }`}
+                                                    >
+                                                        <span className='opacity-65 text-xs font-medium'>Còn lại:</span>
+                                                        <span className='font-black text-xs text-orange-600 dark:text-orange-400'>
+                                                            {selectedFil ? `${availableWeight}g` : '--'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {selectedFil && enteredWeight > 0 && (
+                                                <div className='flex items-center justify-between text-[10px] px-1 opacity-70'>
+                                                    <span>Dự kiến còn lại sau khi in:</span>
+                                                    <span
+                                                        className={
+                                                            isExceeded
+                                                                ? 'font-bold text-amber-600 dark:text-amber-400'
+                                                                : 'font-bold text-emerald-600 dark:text-emerald-400'
+                                                        }
+                                                    >
+                                                        ~{Math.max(0, availableWeight - enteredWeight)}g
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {/* Cảnh báo nếu số gam dùng vượt quá lượng còn lại trong cuộn */}
+                                            {isExceeded && (
+                                                <div className='p-2 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[11px] flex items-start gap-2 animate-in fade-in-50 duration-200'>
+                                                    <AlertTriangle
+                                                        size={15}
+                                                        className='text-amber-500 flex-shrink-0 mt-0.5'
+                                                    />
+                                                    <div className='leading-tight'>
+                                                        <span className='font-bold'>Cảnh báo: </span>
+                                                        Số gam chọn (<strong>{enteredWeight}g</strong>) vượt quá lượng
+                                                        còn lại trong cuộn (<strong>{availableWeight}g</strong>).
+                                                    </div>
+                                                </div>
                                             )}
                                         </div>
-
-                                        <FilamentSelect
-                                            value={mat.inventoryId || ''}
-                                            filaments={filaments}
-                                            placeholder='-- Chọn cuộn nhựa từ kho --'
-                                            onChange={(val) => handleMaterialChange(idx, 'inventoryId', val)}
-                                        />
-                                    </div>
-                                ))}
+                                    )
+                                })}
                             </div>
 
                             <div className='pt-1 border-t border-inherit/40'>
@@ -428,6 +531,13 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                                     <span className='text-[10px] font-mono opacity-60 font-semibold'>
                                         {order.materials && order.materials.length > 0 ? order.materials.length : 1}{' '}
                                         cuộn nhựa
+                                        {(() => {
+                                            const totalG = (order.materials || []).reduce(
+                                                (sum: number, cur: any) => sum + Number(cur.weight || 0),
+                                                0
+                                            )
+                                            return totalG > 0 ? ` • Tổng ${totalG}g` : ''
+                                        })()}
                                     </span>
                                 </div>
 
@@ -438,7 +548,8 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                                               {
                                                   type: order.material || 'PLA',
                                                   color: order.color || 'Mặc định',
-                                                  inventoryId: ''
+                                                  inventoryId: '',
+                                                  weight: 0
                                               }
                                           ]
                                     ).map((m: any, idx: number) => {
@@ -494,6 +605,13 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                                                                 {formatHex}
                                                             </span>
                                                         )}
+                                                        {m.weight !== undefined &&
+                                                            m.weight !== null &&
+                                                            Number(m.weight) > 0 && (
+                                                                <span className='font-mono text-[10px] font-bold px-1.5 py-0.2 rounded bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/30'>
+                                                                    {m.weight}g
+                                                                </span>
+                                                            )}
                                                     </div>
                                                     <div className='text-[11px] opacity-75 flex items-center justify-between mt-0.5'>
                                                         <span className='truncate font-semibold text-orange-500/90 dark:text-orange-400'>
@@ -501,7 +619,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                                                         </span>
                                                         {weight !== null && (
                                                             <span className='text-[10px] font-mono opacity-70 ml-1 flex-shrink-0'>
-                                                                còn ~{weight}g
+                                                                kho còn ~{weight}g
                                                             </span>
                                                         )}
                                                     </div>

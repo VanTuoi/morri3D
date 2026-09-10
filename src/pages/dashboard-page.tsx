@@ -233,7 +233,11 @@ export const DashboardPage: React.FC = () => {
                                                 <span>•</span>
                                                 <span className='truncate font-semibold text-orange-600 dark:text-orange-400'>
                                                     {mats
-                                                        .map((m: any) => (m.color ? `${m.type} (${m.color})` : m.type))
+                                                        .map((m: any) =>
+                                                            m.color
+                                                                ? `${m.type} (${m.color}${m.weight ? ` - ${m.weight}g` : ''})`
+                                                                : `${m.type}${m.weight ? ` (${m.weight}g)` : ''}`
+                                                        )
                                                         .join(', ')}
                                                 </span>
                                                 <span>•</span>

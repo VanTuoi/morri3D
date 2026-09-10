@@ -710,6 +710,13 @@ export const OrdersPage: React.FC = () => {
                                                     <span className='opacity-60 font-normal'>
                                                         ({m.color || 'Mặc định'})
                                                     </span>
+                                                    {m.weight !== undefined &&
+                                                        m.weight !== null &&
+                                                        Number(m.weight) > 0 && (
+                                                            <span className='font-mono font-bold text-orange-600 dark:text-orange-400'>
+                                                                • {m.weight}g
+                                                            </span>
+                                                        )}
                                                 </span>
                                             )
                                         })}
@@ -808,7 +815,11 @@ export const OrdersPage: React.FC = () => {
                                             <div className='opacity-70 text-[10px] sm:text-[11px] truncate flex items-center gap-1.5 mt-0.5'>
                                                 <span className='truncate font-semibold text-orange-600 dark:text-orange-400'>
                                                     {mats
-                                                        .map((m: any) => (m.color ? `${m.type} (${m.color})` : m.type))
+                                                        .map((m: any) =>
+                                                            m.color
+                                                                ? `${m.type} (${m.color}${m.weight ? ` - ${m.weight}g` : ''})`
+                                                                : `${m.type}${m.weight ? ` (${m.weight}g)` : ''}`
+                                                        )
                                                         .join(', ')}
                                                 </span>
                                                 {order.notes && (
